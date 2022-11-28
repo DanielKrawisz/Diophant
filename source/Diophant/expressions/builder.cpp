@@ -2,10 +2,10 @@
 
 namespace Diophant {
     
-    expression::builder &expression::builder::expression() {
+    Expression expression::builder::complete() {
         if (data::size(expressions) != 1 || data::size(data::first(expressions)) != 1) 
             throw data::exception{"could not read expression"};
-        auto x = data::first(data::first(expressions)));
+        auto x = data::first(data::first(expressions));
         expressions = data::stack<data::stack<Expression>>{} << data::stack<Expression>{};
         return x;
     }

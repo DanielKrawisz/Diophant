@@ -1,7 +1,7 @@
 #ifndef DIOPHANT_LAMBDA
 #define DIOPHANT_LAMBDA
 
-#include <Diophant/types.hpp>
+#include <Diophant/evaluate.hpp>
 
 namespace Diophant::expressions {
     struct lambda;

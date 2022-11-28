@@ -32,6 +32,7 @@ namespace Diophant {
         expression e; 
         i >> e;
         l = lambda(e);
+        return i;
     }
     
 }

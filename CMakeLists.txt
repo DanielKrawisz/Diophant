@@ -15,25 +15,25 @@ conan_basic_setup(TARGETS)
 
 ## Check if GTests is installed. If not, install it
 
-option(PACKAGE_TESTS "Build the tests" ON)
+# option(PACKAGE_TESTS "Build the tests" ON)
 
 ## Enable testing
 
 
-if(PACKAGE_TESTS)
-	include(CTest)
-	find_package(GTest REQUIRED)
-	enable_testing()
-	add_subdirectory(test)
-endif()
+# if(PACKAGE_TESTS)
+#    include(CTest)
+#    find_package(GTest REQUIRED)
+#    enable_testing()
+#    add_subdirectory(test)
+# endif()
 
 add_library(Diophant STATIC
     
-    source/Diophant/evaluate.cpp
     source/Diophant/replace.cpp
     source/Diophant/expression.cpp
     source/Diophant/expressions/builder.cpp
     source/Diophant/lambda.cpp
+    source/Diophant/evaluate.cpp
     
 )
 
