@@ -1,5 +1,6 @@
 
-#include <lambda/lambda.hpp>
+#include <lambda.hpp>
+#include <Diophant/expression.hpp>
 
 int main(int args, char **arg) {
     using namespace Diophant;

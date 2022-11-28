@@ -38,14 +38,14 @@ namespace Diophant {
 #include <boost/spirit/include/qi_plus.hpp>
 #include <boost/spirit/include/qi_match.hpp>
 
+using it = boost::spirit::basic_istream_iterator<char>;
+
 namespace Diophant {
     namespace qi = boost::spirit::qi;
     
     std::istream &operator>>(std::istream &i, expression &e) {
         
         expression::builder builder{};
-        
-        using it = boost::spirit::basic_istream_iterator<char>;
         
         auto read_symbol = [&builder](it begin, it end) -> void {
             builder.symbol(std::string{begin, end});
@@ -95,23 +95,23 @@ namespace Diophant {
         
         qi::rule<it> required_whitespace = +qi::ascii::space;
         
-        qi::rule<it> symbol = (qi::ascii::alpha >> *qi::ascii::alnum)[read_symbol];
+        auto symbol = (qi::ascii::alpha >> *qi::ascii::alnum)[read_symbol];
         
-        qi::rule<it> string = (qi::ascii::char_('"') >> 
+        auto string = (qi::ascii::char_('"') >> 
             *(qi::ascii::print - qi::ascii::char_('"')) >> 
             qi::ascii::char_('"'))[read_string];
         
-        qi::rule<it> natural = ((qi::ascii::char_('1', '9') >> *qi::ascii::digit) | 
+        auto natural = ((qi::ascii::char_('1', '9') >> *qi::ascii::digit) | 
             (qi::ascii::string("0x") >> *qi::ascii::xdigit))[read_natural];
             
-        qi::rule<it> lambda = (qi::ascii::char_('\\') >> symbol >> required_whitespace >> subexpression)[read_lambda];
+        auto lambda = (qi::ascii::char_('\\') >> symbol >> required_whitespace >> subexpression)[read_lambda];
         
-        qi::rule<it> call = subexpression >> *(required_whitespace >> subexpression[read_call]);
+        auto call = subexpression >> *(required_whitespace >> subexpression[read_call]);
             
-        qi::rule<it> parenthetical = (qi::ascii::char_('(')[read_open_parens] >> 
+        auto parenthetical = (qi::ascii::char_('(')[read_open_parens] >> 
             expression >> qi::ascii::char_(')')[read_close_parens]);
             
-        qi::rule<it> list = (qi::ascii::char_('[')[read_open_bracket] >> 
+        auto list = (qi::ascii::char_('[')[read_open_bracket] >> 
             (expression >> *(qi::ascii::char_(',')[read_comma] >> expression)) >> 
             qi::ascii::char_("]")[read_close_bracket]);
         
@@ -126,4 +126,3 @@ namespace Diophant {
     }
     
 }
-

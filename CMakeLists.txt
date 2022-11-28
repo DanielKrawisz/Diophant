@@ -29,11 +29,11 @@ conan_basic_setup(TARGETS)
 
 add_library(Diophant STATIC
     
+    source/Diophant/evaluate.cpp
     source/Diophant/replace.cpp
     source/Diophant/expression.cpp
     source/Diophant/expressions/builder.cpp
     source/Diophant/lambda.cpp
-    source/Diophant/evaluate.cpp
     
 )
 
