@@ -1,14 +1,10 @@
 #ifndef DIOPHANT_LAMBDA
 #define DIOPHANT_LAMBDA
 
-#include <Diophant/evaluate.hpp>
-
-namespace Diophant::expressions {
-    struct lambda;
-}
+#include <Diophant/symbol.hpp>
 
 namespace Diophant {
-    struct lambda;
+    struct lambda : data::entry<symbol, expression> {};
     using Lambda = const lambda;
     
     struct lambda {

@@ -8,7 +8,6 @@ namespace Diophant::expressions {
     struct symbol final: abstract {
         std::string Name;
         symbol(const std::string &x) : Name{x} {}
-        bool operator==(const abstract &) const final override;
     };
     
     bool inline symbol::operator==(const abstract &x) const {

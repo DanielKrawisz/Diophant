@@ -1,10 +1,14 @@
 #ifndef DIOPHANT_VALUE
 #define DIOPHANT_VALUE
 
-#include <Diophant/evaluate.hpp>
+#include <Diophant/symbol.hpp>
 
 namespace Diophant {
-    struct value;
+    using pattern = 
+    
+    struct function;
+    
+    struct value : ptr<variant<bool, std::string, data::N, stack<value>, map<value, value>, function> {};
     using Value = const value;
     
     bool operator==(Value, Value);
@@ -21,10 +25,6 @@ namespace Diophant {
         static Value boolean(bool);
         static Value natural(const data::N &);
         static Value string(const std::string &);
-        
-        operator Expression() const;
-        
-        ptr<const expressions::abstract> _;
     };
 }
 

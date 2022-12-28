@@ -4,6 +4,9 @@
 #include <Diophant/expressions/call.hpp>
 #include <Diophant/expressions/values.hpp>
 
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/qi_match.hpp>
+
 namespace Diophant {
     
     Expression evaluate(Expression expr) {
@@ -29,23 +32,14 @@ namespace Diophant {
         return expr;
         
     }
-}
-
-#include <boost/spirit/include/qi_match.hpp>
-#include <boost/spirit/include/qi_char_class.hpp>
-#include <boost/spirit/include/qi_rule.hpp>
-#include <boost/spirit/include/qi_kleene.hpp>
-#include <boost/spirit/include/qi_plus.hpp>
-#include <boost/spirit/include/qi_match.hpp>
-
-using it = boost::spirit::basic_istream_iterator<char>;
-
-namespace Diophant {
+    
     namespace qi = boost::spirit::qi;
     
     std::istream &operator>>(std::istream &i, expression &e) {
         
         expression::builder builder{};
+
+        using it = boost::spirit::basic_istream_iterator<char>;
         
         auto read_symbol = [&builder](it begin, it end) -> void {
             builder.symbol(std::string{begin, end});
@@ -95,7 +89,8 @@ namespace Diophant {
         
         qi::rule<it> required_whitespace = +qi::ascii::space;
         
-        auto symbol = (qi::ascii::alpha >> *qi::ascii::alnum)[read_symbol];
+        qi::rule<it> symbol = ((qi::ascii::alpha | qi::ascii::char_('_')) >> 
+            *(qi::ascii::alnum | qi::ascii::char_('_')))[read_symbol];
         
         auto string = (qi::ascii::char_('"') >> 
             *(qi::ascii::print - qi::ascii::char_('"')) >> 

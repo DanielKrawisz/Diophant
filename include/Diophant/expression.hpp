@@ -3,13 +3,13 @@
 
 #include <Diophant/symbol.hpp>
 
-namespace Diophant::expressions {
-    struct abstract;
-}
-
 namespace Diophant {
     
-    struct expression {
+    struct lambda;
+    
+    struct type_expression : data::expression<
+        ptr<variant<bool, data::N, std::string, symbol, list<expression>, map<expression, expression>, lambda>>, 
+        variant<symbol, lambda>> {
         
         static Expression read(std::string &);
         
@@ -29,14 +29,6 @@ namespace Diophant {
         
         ptr<const expressions::abstract> _;
     };
-    
-    Expression inline call(Expression a, Expression b) {
-        return a(b);
-    }
-    
-    Expression inline expression::null() {
-        return expression{};
-    }
     
 }
 

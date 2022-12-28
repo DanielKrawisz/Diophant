@@ -10,7 +10,6 @@ namespace Diophant {
     
     bool cast(Expression, Expression);
     Expression evaluate(Expression);
-    Expression call(Expression, Expression);
     
     bool operator==(Expression, Expression);
     
