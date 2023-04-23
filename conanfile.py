@@ -1,4 +1,5 @@
-from conans import ConanFile, CMake
+from conan import ConanFile
+from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
 from os import environ
 
 class DiophantConan(ConanFile):
@@ -6,7 +7,7 @@ class DiophantConan(ConanFile):
     version = "0.0.1"
     license = "MIT"
     author = "Daniel Krawisz danielkrawisz@protonmail.com"
-    url = "<Package recipe repository url here, for issues about the package>"
+    url = "https://github.com/DanielKrawisz/Diophant"
     description = "A pure functional programming language that is good for mundane programming tasks as well as for writing math proofs that can be checked by the computer."
     topics = ("functional programming", "Curry-Howard correspondence")
     settings = "os", "compiler", "build_type", "arch"
@@ -14,7 +15,11 @@ class DiophantConan(ConanFile):
     default_options = {"shared": False, "fPIC": True}
     generators = "cmake"
     exports_sources = "*"
-    requires = "boost/1.76.0", "openssl/1.1.1k", "cryptopp/8.5.0", "nlohmann_json/3.10.0", "gmp/6.2.1", "SECP256K1/0.2@proofofwork/stable", "data/v0.0.17@proofofwork/stable", "gtest/1.12.1"
+    requires = [
+        "boost/1.80.0",
+        "taocpp-pegtl/3.2.7",
+        "data/v0.0.24@proofofwork/stable",
+        "gtest/1.12.1"]
     
     def set_version(self):
         if "CIRCLE_TAG" in environ:
