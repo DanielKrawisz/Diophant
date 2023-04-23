@@ -7,7 +7,6 @@ namespace Diophant::expressions {
     
     struct abstract {
         virtual ~abstract() = 0;
-        virtual bool operator==(const abstract &) const = 0;
     };
     
     inline abstract::~abstract() {}

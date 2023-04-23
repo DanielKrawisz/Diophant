@@ -1,12 +1,11 @@
 #ifndef DIOPHANT_SYMBOL
 #define DIOPHANT_SYMBOL
 
-#include <Diophant/replace.hpp>
+#include <Diophant/evaluate.hpp>
 
 namespace Diophant {
-    struct symbol : std::string {
-        static constexpr auto pattern = ctll::fixed_string{"[a-zA-Z_][a-zA-Z0-9_]"};
-        bool valid() const;
+    struct Symbol : std::string {
+        using std::string::string;
         operator Expression() const;
     };
     

@@ -1,24 +1,27 @@
-cmake_minimum_required(VERSION 3.1...3.14)
+cmake_minimum_required (VERSION 3.1...3.14)
 
 # Back compatibility for VERSION range
-if(${CMAKE_VERSION} VERSION_LESS 3.12)
-    cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
-endif()
+if (${CMAKE_VERSION} VERSION_LESS 3.12)
+    cmake_policy (VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
+endif ()
 
-project(Diophant VERSION 1.0
-		DESCRIPTION "a pure functional programming language that implements the Curry Howard isomorphism"
-		LANGUAGES CXX)
+project (Diophant VERSION 0.0.1
+    DESCRIPTION "a pure functional programming language that implements the Curry Howard isomorphism"
+    LANGUAGES CXX)
 
-# Set cmake as import path for Find*.cmake files
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup(TARGETS)
+find_package (Boost CONFIG REQUIRED)
+find_package (OpenSSL CONFIG REQUIRED)
+find_package (cryptopp CONFIG REQUIRED)
+find_package (nlohmann_json CONFIG REQUIRED)
+find_package (gmp CONFIG REQUIRED)
+find_package (secp256k1 CONFIG REQUIRED)
+find_package (pegtl CONFIG REQUIRED)
 
 ## Check if GTests is installed. If not, install it
 
 # option(PACKAGE_TESTS "Build the tests" ON)
 
 ## Enable testing
-
 
 # if(PACKAGE_TESTS)
 #    include(CTest)
@@ -27,29 +30,38 @@ conan_basic_setup(TARGETS)
 #    add_subdirectory(test)
 # endif()
 
-add_library(Diophant STATIC
+add_library (Diophant STATIC
     
     source/Diophant/evaluate.cpp
     source/Diophant/replace.cpp
     source/Diophant/expression.cpp
-    source/Diophant/expressions/builder.cpp
     source/Diophant/lambda.cpp
     
 )
 
-target_link_libraries(Diophant PUBLIC CONAN_PKG::data util CONAN_PKG::boost CONAN_PKG::openssl CONAN_PKG::cryptopp CONAN_PKG::nlohmann_json CONAN_PKG::gmp )
+target_link_libraries (
+    Diophant
+    util
+    boost::boost
+    openssl::openssl
+    cryptopp::cryptopp
+    nlohmann_json::nlohmann_json
+    gmp::gmp
+    secp256k1::secp256k1
+    taocpp::pegtl
+)
 
-target_include_directories(Diophant PUBLIC include)
+target_include_directories (Diophant PUBLIC include)
 
 # Set C++ version
-target_compile_features(Diophant PUBLIC cxx_std_20)
-set_target_properties(Diophant PROPERTIES CXX_EXTENSIONS OFF)
-target_compile_options(Diophant PUBLIC "-fconcepts")
+target_compile_features (Diophant PUBLIC cxx_std_20)
+set_target_properties (Diophant PROPERTIES CXX_EXTENSIONS OFF)
+target_compile_options (Diophant PUBLIC "-fconcepts")
 
-add_executable(Lambda lambda.cpp )
+add_executable (Lambda diophant.cpp )
 
-target_link_libraries(Lambda PUBLIC Diophant)
-target_include_directories(Lambda PUBLIC include)
+target_link_libraries (Lambda PUBLIC Diophant)
+target_include_directories (Lambda PUBLIC include)
 
-target_compile_features(Lambda PUBLIC cxx_std_20)
-set_target_properties(Lambda PROPERTIES CXX_EXTENSIONS OFF)
+target_compile_features (Lambda PUBLIC cxx_std_20)
+set_target_properties (Lambda PROPERTIES CXX_EXTENSIONS OFF)

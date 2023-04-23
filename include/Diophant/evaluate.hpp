@@ -5,16 +5,30 @@
 
 namespace Diophant {
     
-    struct expression;
-    using Expression = const expression;
+    struct Expression;
     
-    bool cast(Expression, Expression);
-    Expression evaluate(Expression);
+    std::ostream &operator << (std::ostream &, Expression);
+    std::istream &operator >> (std::istream &, Expression &);
     
-    bool operator==(Expression, Expression);
+    struct Symbol;
     
-    std::ostream &operator<<(std::ostream &, Expression);
-    std::istream &operator>>(std::istream &, expression &);
+    Symbol head (Expression);
+    
+    struct Pattern;
+    
+    struct machine {
+        bool cast (Expression, Expression) const;
+        
+        Expression evaluate (Expression);
+        maybe<map<Symbol, Expression>> match (Expression, Pattern);
+        
+        declare (const Pattern &);
+        define (const Pattern &, Expression);
+        
+        machine ();
+        
+        std::map<Symbol, std::list<entry<Pattern, Expression>>> Definitions;
+    };
     
 }
 

@@ -4,7 +4,6 @@
 #include <Diophant/symbol.hpp>
 
 namespace Diophant {
-    using pattern = 
     
     struct function;
     
