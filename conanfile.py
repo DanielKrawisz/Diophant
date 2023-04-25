@@ -12,12 +12,12 @@ class DiophantConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": False, "fPIC": True}
-    generators = "cmake"
     exports_sources = "*"
     requires = [
         "boost/1.80.0",
         "taocpp-pegtl/3.2.7",
-        "data/v0.0.24@proofofwork/stable",
+        "gmp/6.2.1",
+        "data/v0.0.25@proofofwork/unstable",
         "gtest/1.12.1"]
     
     def set_version (self):

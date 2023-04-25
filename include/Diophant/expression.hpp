@@ -1,96 +1,82 @@
 #ifndef DIOPHANT_EXPRESSION
 #define DIOPHANT_EXPRESSION
 
-#include <Diophant/symbol.hpp>
+#include <Diophant/evaluate.hpp>
+#include <Diophant/expressions/expressions.hpp>
 
 namespace Diophant {
     
-    struct Expression : ptr<const expressions::abstract> {
+    struct expression : ptr<const expressions::abstract> {
         
         // an undefined expression
-        expression () : ptr<expressions::abstract> {} {}
+        expression () : ptr<const expressions::abstract> {} {}
         
         // parse some code and read in an expression.
         expression (const string &);
-        
-        static Expression null ();
-        static Expression boolean (bool b);
-        static Expression rational (const data::Q &q);
-        static Expression symbol (const data::string &x);
-        static Expression string (const data::string &str);
-        static Expression list (const data::list<Expression> &ls);
-        static Expression object (const data::list<data::entry<data::string, Expression>> &x);
 
-        static Expression apply (const Expression, const Expression);
+        uint32 precedence () const;
 
-        static Expression negate (const Expression);
-        static Expression plus (const Expression, const Expression);
-        static Expression minus (const Expression, const Expression);
-        static Expression times (const Expression, const Expression);
-        static Expression power (const Expression, const Expression);
-        static Expression divide (const Expression, const Expression);
+        Expression operator () (Expression &) const;
+        Expression operator - () const;
+        Expression operator ! () const;
 
-        static Expression equal (const Expression, const Expression);
-        static Expression unequal (const Expression, const Expression);
-        static Expression greater_equal (const Expression, const Expression);
-        static Expression less_equal (const Expression, const Expression);
-        static Expression greater (const Expression, const Expression);
-        static Expression less (const Expression, const Expression);
+        Expression operator + (Expression &) const;
+        Expression operator - (Expression &) const;
+        Expression operator * (Expression &) const;
+        Expression operator / (Expression &) const;
+        Expression operator ^ (Expression &) const;
 
-        static Expression boolean_not (const Expression);
-        static Expression boolean_and (const Expression, const Expression);
-        static Expression boolean_or (const Expression, const Expression);
+        Expression operator == (Expression &) const;
+        Expression operator != (Expression &) const;
+        Expression operator <= (Expression &) const;
+        Expression operator >= (Expression &) const;
+        Expression operator < (Expression &) const;
+        Expression operator > (Expression &) const;
 
-        static Expression arrow (const Expression, const Expression);
+        Expression operator && (Expression &) const;
+        Expression operator || (Expression &) const;
+        Expression arrow (Expression &) const;
 
-        static Expression intuitionistic_and (const Expression, const Expression);
-        static Expression intuitionistic_or (const Expression, const Expression);
-        static Expression intuitionistic_implies (const Expression, const Expression);
-
-        virtual ~expression () {};
-
-        virtual std::ostream &write (std::ostream &) const = 0;
-
-        data::string write () const {
-            std::stringstream ss;
-            write (ss);
-            return ss.str ();
-        }
-
-        virtual uint32 precedence () const {
-            return 0;
-        }
-
-        virtual Expression evaluate (const std::map<data::string, Expression> &vars) const {
-            return this->shared_from_this ();
-        };
-
-        virtual Expression operator () (const Expression) const;
-        virtual Expression operator - () const;
-        virtual Expression operator ! () const;
-
-        virtual Expression operator + (const Expression) const;
-        virtual Expression operator - (const Expression) const;
-        virtual Expression operator * (const Expression) const;
-        virtual Expression operator / (const Expression) const;
-        virtual Expression operator ^ (const Expression) const;
-
-        virtual Expression operator == (const Expression) const;
-        virtual Expression operator != (const Expression) const;
-        virtual Expression operator <= (const Expression) const;
-        virtual Expression operator >= (const Expression) const;
-        virtual Expression operator < (const Expression) const;
-        virtual Expression operator > (const Expression) const;
-
-        virtual Expression operator && (const Expression) const;
-        virtual Expression operator || (const Expression) const;
-        virtual Expression arrow (const Expression) const;
-
-        virtual Expression operator & (const Expression) const;
-        virtual Expression operator | (const Expression) const;
-        virtual Expression implies (const Expression) const;
+        Expression operator & (Expression &) const;
+        Expression operator | (Expression &) const;
+        Expression implies (Expression &) const;
         
     };
+
+    Expression null ();
+    Expression boolean (bool b);
+    Expression rational (const data::Q &q);
+    Expression symbol (const data::string &x);
+    Expression string (const data::string &str);
+    Expression list (const data::list<Expression> &ls);
+    Expression object (const data::list<data::entry<data::string, Expression>> &x);
+
+    Expression apply (Expression &, Expression &);
+
+    Expression negate (Expression &);
+    Expression plus (Expression &, Expression &);
+    Expression minus (Expression &, Expression &);
+    Expression times (Expression &, Expression &);
+    Expression power (Expression &, Expression &);
+    Expression divide (Expression &, Expression &);
+
+    Expression equal (Expression &, Expression &);
+    Expression unequal (Expression &, Expression &);
+    Expression greater_equal (Expression &, Expression &);
+    Expression less_equal (Expression &, Expression &);
+    Expression greater (Expression &, Expression &);
+    Expression less (Expression &, Expression &);
+
+    Expression boolean_not (Expression &);
+    Expression boolean_and (Expression &, Expression &);
+    Expression boolean_or (Expression &, Expression &);
+
+    Expression arrow (Expression &, Expression &);
+
+    Expression intuitionistic_and (Expression &, Expression &);
+    Expression intuitionistic_or (Expression &, Expression &);
+    Expression intuitionistic_implies (Expression &, Expression &);
+
     
 }
 

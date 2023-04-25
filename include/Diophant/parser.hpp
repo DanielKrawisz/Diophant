@@ -2,10 +2,9 @@
 #define NODE_PARSER
 
 #include <tao/pegtl.hpp>
-#include "evaluate.hpp"
-#include "expression.hpp"
+#include "machine.hpp"
 
-namespace Diophant::parse {
+namespace parse {
     using namespace tao::pegtl;
 
     struct ws : star<space> {};
@@ -126,10 +125,232 @@ namespace Diophant::parse {
     struct statement : seq<expression, opt<ws, sor<infer, set, declare>>> {};
 
     struct grammar : seq<statement, ws> {};
-    
+}
+
+namespace Diophant {
+
+    namespace pegtl = tao::pegtl;
+
     struct Parser {
-        data::stack<Expression> expressions {};
         Machine machine;
+        data::stack<Expression> expressions {};
+
+        void read_symbol (const data::string &in);
+        void read_string (const data::string &in);
+        void read_number (const data::string &in);
+
+        void open_list ();
+        void open_object ();
+        void close_list ();
+        void close_object ();
+        void comma ();
+
+        void apply ();
+
+        void negate ();
+        void mul ();
+        void pow ();
+        void div ();
+        void plus ();
+        void minus ();
+
+        void equal ();
+        void unequal ();
+        void greater_equal ();
+        void less_equal ();
+        void greater ();
+        void less ();
+
+        void boolean_not ();
+        void boolean_and ();
+        void boolean_or ();
+
+        void arrow ();
+
+        void intuitionistic_and ();
+        void intuitionistic_or ();
+        void intuitionistic_implies ();
+
+        void set ();
+    };
+
+    template <typename Rule> struct eval_action : pegtl::nothing<Rule> {};
+
+    template <> struct eval_action<parse::number_lit> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.read_number (in.string ());
+        }
+    };
+
+    template <> struct eval_action<parse::string_body> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.read_string (in.string ());
+        }
+    };
+
+    template <> struct eval_action<parse::symbol> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.read_symbol (in.string ());
+        }
+    };
+
+    template <> struct eval_action<parse::negate_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.negate ();
+        }
+    };
+
+    template <> struct eval_action<parse::bool_not_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.boolean_not ();
+        }
+    };
+
+    template <> struct eval_action<parse::mul_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.mul ();
+        }
+    };
+
+    template <> struct eval_action<parse::pow_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.pow ();
+        }
+    };
+
+    template <> struct eval_action<parse::div_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.div ();
+        }
+    };
+
+    template <> struct eval_action<parse::add_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.plus ();
+        }
+    };
+
+    template <> struct eval_action<parse::sub_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.minus ();
+        }
+    };
+
+    template <> struct eval_action<parse::equal_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.equal ();
+        }
+    };
+
+    template <> struct eval_action<parse::unequal_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.unequal ();
+        }
+    };
+
+    template <> struct eval_action<parse::greater_equal_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.greater_equal ();
+        }
+    };
+
+    template <> struct eval_action<parse::less_equal_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.less_equal ();
+        }
+    };
+
+    template <> struct eval_action<parse::less_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.less ();
+        }
+    };
+
+    template <> struct eval_action<parse::greater_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.greater ();
+        }
+    };
+
+    template <> struct eval_action<parse::bool_and_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.boolean_and ();
+        }
+    };
+
+    template <> struct eval_action<parse::bool_or_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.boolean_or ();
+        }
+    };
+
+    template <> struct eval_action<parse::arrow_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.arrow ();
+        }
+    };
+
+    template <> struct eval_action<parse::intuitionistic_and_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.intuitionistic_and ();
+        }
+    };
+
+    template <> struct eval_action<parse::intuitionistic_or_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.intuitionistic_or ();
+        }
+    };
+
+    template <> struct eval_action<parse::intuitionistic_implies_op> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.intuitionistic_implies ();
+        }
+    };
+
+    template <> struct eval_action<parse::expression> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {}
+    };
+
+    template <> struct eval_action<parse::infer> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.set ();
+        }
+    };
+
+    template <> struct eval_action<parse::statement> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            if (data::size (eval.expressions) == 1) {
+                auto v = evaluate (eval.expressions.first (), eval.machine);
+                std::cout << "\n result: " << v << std::endl;
+                eval.expressions = data::stack<Expression> {};
+            }
+        }
     };
 }
 

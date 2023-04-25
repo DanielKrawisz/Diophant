@@ -2,7 +2,7 @@
 #include <Diophant/pattern.hpp>
 
 namespace Diophant {
-    
+    /*
     machine::machine () {
         
         define (Pattern {"null : null"}, Expression::null ());
@@ -26,17 +26,11 @@ namespace Diophant {
         define (Pattern {"x.Q < y.Q : bool"});
         define (Pattern {"x.Q > y.Q : bool"});
         
-    }
-    
+    }*/
+    /*
     Expression machine::evaluate (Expression x) {
         Symbol h = head (x);
-        auto q = Definitions.find (h);
-        
-        if (q != Definitions.end ()) {
-            
-        }
-        
-        
-    }
+
+    }*/
     
 }

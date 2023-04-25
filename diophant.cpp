@@ -1,13 +1,12 @@
 
-#include <lambda.hpp>
-#include <Diophant/expression.hpp>
+#include <Diophant/parser.hpp>
 
 int main(int args, char **arg) {
 
     std::cout << "\nDiophant engaged! " << std::endl;
     using namespace Diophant;
-    
-    machine m;
+
+    Diophant::Parser eval {};
     std::string input_str;
     
     while (true) {
@@ -18,8 +17,7 @@ int main(int args, char **arg) {
         
         try {
             tao::pegtl::memory_input<> input (input_str, "expression");
-            Diophant::evaluation eval {vars};
-            tao::pegtl::parse<calc::grammar, eval_action> (input, eval);
+            tao::pegtl::parse<parse::grammar, Diophant::eval_action> (input, eval);
         } catch (...) {
             return 1;
         }

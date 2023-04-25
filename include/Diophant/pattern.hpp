@@ -1,12 +1,12 @@
 #ifndef DIOPHANT_PATTERN
 #define DIOPHANT_PATTERN
 
-#include <Diophant/symbol.hpp>
+#include <Diophant/evaluate.hpp>
 
 namespace Diophant {
     
-    struct Pattern {
-        Pattern (Expression);
+    struct pattern {
+        pattern (Expression);
     };
     
 }

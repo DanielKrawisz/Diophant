@@ -9,6 +9,7 @@ project (Diophant VERSION 0.0.1
     DESCRIPTION "a pure functional programming language that implements the Curry Howard isomorphism"
     LANGUAGES CXX)
 
+find_package (data CONFIG REQUIRED)
 find_package (Boost CONFIG REQUIRED)
 find_package (OpenSSL CONFIG REQUIRED)
 find_package (cryptopp CONFIG REQUIRED)
@@ -33,14 +34,12 @@ find_package (pegtl CONFIG REQUIRED)
 add_library (Diophant STATIC
     
     source/Diophant/evaluate.cpp
-    source/Diophant/replace.cpp
-    source/Diophant/expression.cpp
-    source/Diophant/lambda.cpp
     
 )
 
 target_link_libraries (
     Diophant
+    data::data
     util
     boost::boost
     openssl::openssl
