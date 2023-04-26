@@ -1,13 +1,11 @@
 #ifndef DIOPHANT_REPLACE
 #define DIOPHANT_REPLACE
 
-#include <Diophant/evaluate.hpp>
+#include <Diophant/expression.hpp>
 
 namespace Diophant {
     
-    Expression replace (Expression, Symbol, Expression);
-    
-    bool operator == (Symbol, Symbol);
+    Expression replace (Expression, data::list<data::entry<Symbol, Expression>>);
     
 }
 

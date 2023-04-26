@@ -33,7 +33,8 @@ find_package (pegtl CONFIG REQUIRED)
 
 add_library (Diophant STATIC
     
-    source/Diophant/evaluate.cpp
+    source/Diophant/machine.cpp
+    source/Diophant/expression.cpp
     
 )
 

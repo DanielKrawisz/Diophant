@@ -13,11 +13,19 @@ namespace Diophant {
     std::ostream &operator << (std::ostream &, Expression &);
     std::istream &operator >> (std::istream &, expression &);
     
-    struct Symbol;
+    struct symbol;
+    using Symbol = const symbol;
 
     std::strong_ordering operator <=> (const Symbol &, const Symbol &);
+    bool operator == (const Symbol &, const Symbol &);
     
     Symbol head (Expression &);
+
+    struct Type {};
+
+    std::partial_ordering operator <=> (const Type &, const Type &);
+
+    Type type (Expression &);
     
     struct pattern;
     using Pattern = const pattern;
@@ -28,7 +36,6 @@ namespace Diophant {
     struct Machine;
 
     Expression evaluate (Expression &, Machine &);
-    
     
 }
 

@@ -4,7 +4,7 @@
 #include <Diophant/evaluate.hpp>
 
 namespace Diophant {
-    struct Symbol : std::string {
+    struct symbol : std::string {
         using std::string::string;
         operator Expression() const;
     };

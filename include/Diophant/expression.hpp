@@ -8,40 +8,18 @@ namespace Diophant {
     
     struct expression : ptr<const expressions::abstract> {
         
-        // an undefined expression
-        expression () : ptr<const expressions::abstract> {} {}
+        using ptr<const expressions::abstract>::ptr;
         
         // parse some code and read in an expression.
         expression (const string &);
 
         uint32 precedence () const;
-
-        Expression operator () (Expression &) const;
-        Expression operator - () const;
-        Expression operator ! () const;
-
-        Expression operator + (Expression &) const;
-        Expression operator - (Expression &) const;
-        Expression operator * (Expression &) const;
-        Expression operator / (Expression &) const;
-        Expression operator ^ (Expression &) const;
-
-        Expression operator == (Expression &) const;
-        Expression operator != (Expression &) const;
-        Expression operator <= (Expression &) const;
-        Expression operator >= (Expression &) const;
-        Expression operator < (Expression &) const;
-        Expression operator > (Expression &) const;
-
-        Expression operator && (Expression &) const;
-        Expression operator || (Expression &) const;
-        Expression arrow (Expression &) const;
-
-        Expression operator & (Expression &) const;
-        Expression operator | (Expression &) const;
-        Expression implies (Expression &) const;
         
     };
+
+}
+
+namespace Diophant::make {
 
     Expression null ();
     Expression boolean (bool b);
@@ -77,7 +55,6 @@ namespace Diophant {
     Expression intuitionistic_or (Expression &, Expression &);
     Expression intuitionistic_implies (Expression &, Expression &);
 
-    
 }
 
 #endif

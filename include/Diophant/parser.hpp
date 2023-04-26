@@ -133,7 +133,7 @@ namespace Diophant {
 
     struct Parser {
         Machine machine;
-        data::stack<Expression> expressions {};
+        data::stack<Expression> stack {};
 
         void read_symbol (const data::string &in);
         void read_string (const data::string &in);
@@ -345,13 +345,104 @@ namespace Diophant {
     template <> struct eval_action<parse::statement> {
         template <typename Input>
         static void apply (const Input& in, Parser &eval) {
-            if (data::size (eval.expressions) == 1) {
-                auto v = evaluate (eval.expressions.first (), eval.machine);
+            if (data::size (eval.stack) == 1) {
+                auto v = evaluate (eval.stack.first (), eval.machine);
                 std::cout << "\n result: " << v << std::endl;
-                eval.expressions = data::stack<Expression> {};
+                eval.stack = data::stack<Expression> {};
             }
         }
     };
+    void inline Parser::read_symbol (const data::string &in) {
+        stack <<= make::symbol (in);
+    }
+
+    void inline Parser::read_string (const data::string &in) {
+        stack <<= make::string (in);
+    }
+
+    void inline Parser::read_number (const data::string &in) {
+        stack <<= make::rational (Q {Z {in}});;
+    }
+
+    void inline Parser::apply () {
+        stack = prepend (rest (rest (stack)), make::apply (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::negate () {
+        stack = prepend (rest (stack), make::negate (first (stack)));
+    }
+
+    void inline Parser::boolean_not () {
+        stack = prepend (rest (stack), make::boolean_not (first (stack)));
+    }
+
+    void inline Parser::mul () {
+        stack = prepend (rest (rest (stack)), make::times (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::pow () {
+        stack = prepend (rest (rest (stack)), make::power (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::div () {
+        stack = prepend (rest (rest (stack)), make::divide (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::plus () {
+        stack = prepend (rest (rest (stack)), make::plus (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::minus () {
+        stack = prepend (rest (rest (stack)), make::minus (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::equal () {
+        stack = prepend (rest (rest (stack)), make::equal (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::unequal () {
+        stack = prepend (rest (rest (stack)), make::unequal (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::greater_equal () {
+        stack = prepend (rest (rest (stack)), make::greater_equal (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::less_equal () {
+        stack = prepend (rest (rest (stack)), make::less_equal (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::greater () {
+        stack = prepend (rest (rest (stack)), make::greater (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::less () {
+        stack = prepend (rest (rest (stack)), make::less (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::boolean_and () {
+        stack = prepend (rest (rest (stack)), make::boolean_and (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::boolean_or () {
+        stack = prepend (rest (rest (stack)), make::boolean_or (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::arrow () {
+        stack = prepend (rest (rest (stack)), make::arrow (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::intuitionistic_and () {
+        stack = prepend (rest (rest (stack)), make::intuitionistic_and (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::intuitionistic_or () {
+        stack = prepend (rest (rest (stack)), make::intuitionistic_or (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::intuitionistic_implies () {
+        stack = prepend (rest (rest (stack)), make::intuitionistic_implies (first (rest (stack)), first (stack)));
+    }
 }
 
 #endif
