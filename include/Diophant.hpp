@@ -1,6 +1,6 @@
 #ifndef DIOPHANT
 #define DIOPHANT
 
-#include <Diophant/expression.hpp>
+#include <Diophant/parser.hpp>
 
 #endif

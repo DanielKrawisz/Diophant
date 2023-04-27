@@ -9,11 +9,14 @@ namespace Diophant {
     struct expression : ptr<const expressions::abstract> {
         
         using ptr<const expressions::abstract>::ptr;
+        expression (ptr<const expressions::abstract> &&p) : ptr<const expressions::abstract> {p} {}
         
         // parse some code and read in an expression.
         expression (const string &);
 
-        uint32 precedence () const;
+        uint32 precedence () const {
+            return (*this)->precedence ();
+        }
         
     };
 
@@ -54,6 +57,10 @@ namespace Diophant::make {
     Expression intuitionistic_and (Expression &, Expression &);
     Expression intuitionistic_or (Expression &, Expression &);
     Expression intuitionistic_implies (Expression &, Expression &);
+    
+    Expression inline null () {
+        return expression {};
+    }
 
 }
 

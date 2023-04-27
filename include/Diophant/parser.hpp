@@ -1,8 +1,12 @@
-#ifndef NODE_PARSER
-#define NODE_PARSER
+#ifndef DIOPHANT_PARSER
+#define DIOPHANT_PARSER
 
 #include <tao/pegtl.hpp>
-#include "machine.hpp"
+#include <Diophant/machine.hpp>
+#include <Diophant/expressions/values.hpp>
+#include <Diophant/expressions/unary.hpp>
+#include <Diophant/expressions/binary.hpp>
+#include <Diophant/expressions/symbol.hpp>
 
 namespace parse {
     using namespace tao::pegtl;

@@ -2,7 +2,6 @@
 #define DIOPHANT_EXPRESSIONS_VALUES
 
 #include <Diophant/expressions/expressions.hpp>
-#include <Diophant/value.hpp>
 #include <Diophant/expression.hpp>
 
 namespace Diophant::expressions {
@@ -10,46 +9,48 @@ namespace Diophant::expressions {
     template <typename X>
     struct value final : abstract {
         X val;
-        value(const X &x) : val{x} {}
-        bool operator==(const abstract &x) const final override;
+        value (const X &x) : val {x} {}
         
-        static Value make(const X &);
+        static Expression make (const X &);
     };
     
     using boolean = value<bool>;
-    using natural = value<data::N>;
+    using rational = value<data::Q>;
     using list = value<data::stack<Expression>>;
+    using object = value<data::stack<entry<std::string, Expression>>>;
     using string = value<std::string>;
+}
+
+namespace Diophant::make {
     
-    template <typename X>
-    bool inline value<X>::operator==(const abstract &x) const {
-        auto p = dynamic_cast<const value<X> *>(&x);
-        return p == nullptr ? false : val == p->val;
+    Expression inline boolean (bool b) {
+        return expressions::boolean::make (b);
     }
     
+    Expression inline rational (const data::Q &n) {
+        return expressions::rational::make (n);
+    }
+    
+    Expression inline string (const std::string &x) {
+        return expressions::string::make (x);
+    }
+    
+    Expression inline list (data::stack<Expression> z) {
+        return expressions::list::make (z);
+    };
+    
+    Expression inline object (data::stack<entry<std::string, Expression>> z) {
+        return expressions::object::make (z);
+    };
+    
+}
+
+namespace Diophant::expressions {
     template <typename X>
-    Value inline value<X>::make(const X &x) {
-        return Diophant::value{std::make_shared<value<X>>(x)};
+    Expression inline value<X>::make (const X &x) {
+        return Diophant::expression {std::static_pointer_cast<const abstract> (std::make_shared<value<X>> (x))};
     }
 }
 
-namespace Diophant {
-    
-    Expression inline expression::boolean(bool b) {
-        return expressions::boolean::make(b);
-    }
-    
-    Expression inline expression::natural(const data::N &n) {
-        return expressions::natural::make(n);
-    }
-    
-    Expression inline expression::string(const std::string &x) {
-        return expressions::string::make(x);
-    }
-    
-    Expression inline expression::list(data::stack<Expression> z) {
-        return expressions::list::make(z);
-    };
-}
 
 #endif

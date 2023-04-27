@@ -10,9 +10,11 @@ namespace Diophant::expressions {
         symbol(const std::string &x) : Name{x} {}
     };
     
-    bool inline symbol::operator==(const abstract &x) const {
-        auto p = dynamic_cast<const symbol *>(&x);
-        return p == nullptr ? false : Name == p->Name;
+}
+
+namespace Diophant::make {
+    Expression inline symbol (const std::string &x) {
+        return Diophant::expression {std::static_pointer_cast<const expressions::abstract> (std::make_shared<expressions::symbol> (x))};
     }
 }
 
