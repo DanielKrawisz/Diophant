@@ -175,6 +175,8 @@ namespace Diophant {
         void intuitionistic_or ();
         void intuitionistic_implies ();
 
+        void declare ();
+        void infer ();
         void set ();
     };
 
@@ -339,10 +341,24 @@ namespace Diophant {
         static void apply (const Input& in, Parser &eval) {}
     };
 
-    template <> struct eval_action<parse::infer> {
+    template <> struct eval_action<parse::set> {
         template <typename Input>
         static void apply (const Input& in, Parser &eval) {
             eval.set ();
+        }
+    };
+
+    template <> struct eval_action<parse::declare> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.declare ();
+        }
+    };
+
+    template <> struct eval_action<parse::infer> {
+        template <typename Input>
+        static void apply (const Input& in, Parser &eval) {
+            eval.infer ();
         }
     };
 
@@ -356,6 +372,7 @@ namespace Diophant {
             }
         }
     };
+    
     void inline Parser::read_symbol (const data::string &in) {
         stack <<= make::symbol (in);
     }

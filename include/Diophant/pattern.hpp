@@ -2,7 +2,6 @@
 #define DIOPHANT_PATTERN
 
 #include <Diophant/symbol.hpp>
-#include <Diophant/expression.hpp>
 
 namespace Diophant {
     

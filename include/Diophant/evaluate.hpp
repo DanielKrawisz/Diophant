@@ -12,16 +12,11 @@ namespace Diophant {
     
     std::ostream &operator << (std::ostream &, Expression &);
     std::istream &operator >> (std::istream &, expression &);
-    
-    struct symbol;
-    using Symbol = const symbol;
 
-    std::strong_ordering operator <=> (const Symbol &, const Symbol &);
-    bool operator == (const Symbol &, const Symbol &);
-    
-    Symbol head (Expression &);
-
-    struct Type {};
+    struct Type {
+        Type ();
+        Type (Expression);
+    };
 
     std::partial_ordering operator <=> (const Type &, const Type &);
 

@@ -35,20 +35,22 @@ add_library (Diophant STATIC
     
     source/Diophant/machine.cpp
     source/Diophant/expression.cpp
+    source/Diophant/expressions/values.cpp
+    source/Diophant/parser.cpp
     
 )
 
 target_link_libraries (
     Diophant
-    data::data
     util
-    boost::boost
     openssl::openssl
+    boost::boost
     cryptopp::cryptopp
     nlohmann_json::nlohmann_json
     gmp::gmp
     secp256k1::secp256k1
     taocpp::pegtl
+    data::data
 )
 
 target_include_directories (Diophant PUBLIC include)

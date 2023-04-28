@@ -11,6 +11,8 @@ namespace Diophant::expressions {
         virtual uint32 precedence () const {
             return 0;
         }
+        
+        virtual std::ostream &write (std::ostream &) const = 0;
     };
     
     inline abstract::~abstract() {}

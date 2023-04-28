@@ -2,8 +2,6 @@
 #define DIOPHANT_MACHINE
 
 #include <Diophant/pattern.hpp>
-#include <Diophant/symbol.hpp>
-#include <Diophant/expression.hpp>
 
 namespace Diophant {
 
@@ -19,12 +17,13 @@ namespace Diophant {
 
     struct Machine {
         Expression evaluate (Expression &);
-        list<data::entry<Pattern, Cast>> operator [] (Symbol &) const;
-
+        list<entry<Pattern, Cast>> operator [] (Symbol &) const;
+        
+        void declare (Pattern, Type);
+        void define (Pattern, Expression);
+        
         Machine ();
 
-    private:
-        void define (Pattern &, Expression &);
     };
 
     Expression inline evaluate (Expression &x, Machine &m) {

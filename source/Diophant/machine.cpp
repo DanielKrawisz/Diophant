@@ -1,8 +1,6 @@
 
-#include <Diophant/pattern.hpp>
-#include <Diophant/machine.hpp>
-#include <Diophant/symbol.hpp>
 #include <Diophant/replace.hpp>
+#include <Diophant/machine.hpp>
 
 namespace Diophant {
 

@@ -19,6 +19,10 @@ namespace Diophant {
         }
         
     };
+    
+    std::ostream inline &operator << (std::ostream &o, Expression &e) {
+        return e.get () == nullptr ? o << "null" : e->write (o);
+    }
 
 }
 

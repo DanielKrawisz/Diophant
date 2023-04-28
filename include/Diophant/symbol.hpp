@@ -1,13 +1,23 @@
 #ifndef DIOPHANT_SYMBOL
 #define DIOPHANT_SYMBOL
 
-#include <Diophant/evaluate.hpp>
+#include <Diophant/expressions/symbol.hpp>
 
 namespace Diophant {
-    struct symbol : std::string {
-        using std::string::string;
-        operator Expression() const;
-    };
+    using Symbol = const expressions::symbol;
+    
+    Symbol head (Expression &);    
+}
+
+namespace Diophant::expressions {
+    
+    std::strong_ordering inline operator <=> (const Symbol &a, const Symbol &b) {
+        return a.Name <=> b.Name;
+    }
+    
+    bool inline operator == (const Symbol &a, const Symbol &b) {
+        return a.Name == b.Name;
+    }
     
 }
 

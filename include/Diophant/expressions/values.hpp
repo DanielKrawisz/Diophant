@@ -12,6 +12,7 @@ namespace Diophant::expressions {
         value (const X &x) : val {x} {}
         
         static Expression make (const X &);
+        std::ostream &write (std::ostream &) const override;
     };
     
     using boolean = value<bool>;
@@ -50,7 +51,26 @@ namespace Diophant::expressions {
     Expression inline value<X>::make (const X &x) {
         return Diophant::expression {std::static_pointer_cast<const abstract> (std::make_shared<value<X>> (x))};
     }
+    
+    std::ostream inline &write (std::ostream &o, bool b) {
+        return o << std::boolalpha << b;
+    }
+    
+    std::ostream inline &write (std::ostream &o, const data::Q &q) {
+        return o << q;
+    }
+    
+    std::ostream inline &write (std::ostream &o, const std::string &x) {
+        return o << "\"" << x << "\"";
+    }
+    
+    std::ostream &write (std::ostream &o, data::stack<Expression>);
+    std::ostream &write (std::ostream &o, data::stack<entry<std::string, Expression>>);
+    
+    template <typename X>
+    std::ostream inline &value<X>::write (std::ostream &o) const {
+        return expressions::write (o, val);
+    }
 }
-
 
 #endif

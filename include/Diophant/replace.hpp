@@ -1,11 +1,11 @@
 #ifndef DIOPHANT_REPLACE
 #define DIOPHANT_REPLACE
 
-#include <Diophant/expression.hpp>
+#include <Diophant/symbol.hpp>
 
 namespace Diophant {
     
-    Expression replace (Expression, data::list<data::entry<Symbol, Expression>>);
+    Expression replace (Expression, list<entry<Symbol, Expression>>);
     
 }
 

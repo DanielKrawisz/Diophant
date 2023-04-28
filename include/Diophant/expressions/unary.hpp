@@ -13,6 +13,15 @@ namespace Diophant::expressions {
     };
     
     template <unary_operand X>
+    constexpr const char *unary_operator () {
+        switch (X) {
+            case unary_operand::NOT : return "!";
+            case unary_operand::NEGATE : return "-";
+            case unary_operand::PLUS : return "+";
+        }
+    }
+    
+    template <unary_operand X>
     struct unary_expression final : abstract {
         
         uint32 precedence () const override {
@@ -23,6 +32,8 @@ namespace Diophant::expressions {
         unary_expression (Expression &x) : expression {x} {}
         
         static Expression make (Expression &);
+        
+        std::ostream &write (std::ostream &) const override;
     };
     
     using boolean_not = unary_expression<unary_operand::NOT>;
@@ -46,6 +57,11 @@ namespace Diophant::expressions {
     template <unary_operand X>
     Expression inline unary_expression<X>::make (Expression &x) {
         return Diophant::expression {std::static_pointer_cast<const abstract> (std::make_shared<unary_expression<X>> (x))};
+    }
+    
+    template <unary_operand X>
+    std::ostream inline &unary_expression<X>::write (std::ostream &o) const {
+        return expression->write (o << unary_operator<X> () << " ");
     }
 }
 
