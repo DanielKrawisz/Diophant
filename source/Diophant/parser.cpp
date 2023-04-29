@@ -14,8 +14,7 @@ namespace Diophant {
     
     void Parser::infer () {
         Pattern p {first (rest (stack))};
-        machine.declare (p, Type {});
-        machine.define (p, first (stack));
+        machine.define (p, Type {}, first (stack));
         stack = prepend (rest (rest (stack)), first (stack));
     }
 }

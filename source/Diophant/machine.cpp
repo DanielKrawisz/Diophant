@@ -6,26 +6,26 @@ namespace Diophant {
 
     Machine::Machine () {
 /*
-        define (Pattern {"null : null"}, Expression::null ());
-        define (Pattern {"true : bool"}, Expression::boolean (true));
-        define (Pattern {"false : bool"}, Expression::boolean (false));
+        define (Pattern {"null"}, Type {"null"}, Expression::null ());
+        define (Pattern {"true"}, Type {"boolean"}, Expression::boolean (true));
+        define (Pattern {"false"}, Type {"boolean"}, Expression::boolean (false));
 
-        define (Pattern {"-x.Q : Q"});
-        define (Pattern {"x.Q + y.Q : Q"});
-        define (Pattern {"x.Q * y.Q : Q"});
-        define (Pattern {"x.Q - y.Q : Q"});
-        define (Pattern {"x.Q / y.Q : Q"});
+        define (Pattern {"-x.Q"}, Type {"Q"});
+        define (Pattern {"x.Q + y.Q"}, Type {"Q"});
+        define (Pattern {"x.Q * y.Q"}, Type {"Q"});
+        define (Pattern {"x.Q - y.Q"}, Type {"Q"});
+        define (Pattern {"x.Q / y.Q"}, Type {"Q"});
 
-        define (Pattern {"x.bool || y.bool : bool"});
-        define (Pattern {"x.bool && y.bool : bool"});
-        define (Pattern {"!x.bool : bool"});
+        define (Pattern {"x.bool || y.bool"}, Type {"boolean"});
+        define (Pattern {"x.bool && y.bool"}, Type {"boolean"});
+        define (Pattern {"!x.bool"}, Type {"boolean"});
 
-        define (Pattern {"x.Q == y.Q : bool"});
-        define (Pattern {"x.Q != y.Q : bool"});
-        define (Pattern {"x.Q <= y.Q : bool"});
-        define (Pattern {"x.Q >= y.Q : bool"});
-        define (Pattern {"x.Q < y.Q : bool"});
-        define (Pattern {"x.Q > y.Q : bool"});
+        define (Pattern {"x.Q == y.Q"}, Type {"boolean"});
+        define (Pattern {"x.Q != y.Q"}, Type {"boolean"});
+        define (Pattern {"x.Q <= y.Q"}, Type {"boolean"});
+        define (Pattern {"x.Q >= y.Q"}, Type {"boolean"});
+        define (Pattern {"x.Q < y.Q"}, Type {"boolean"});
+        define (Pattern {"x.Q > y.Q"}, Type {"boolean"});
 */
     }
 
@@ -39,6 +39,79 @@ namespace Diophant {
             return evaluate (cast (p.Value.type, replace (p.Value.expression, *matches)));
 
         return x;
+    }
+    
+    void Machine::declare (Pattern p, Type t) {
+        Symbol h = head (p);
+        
+        auto v = definitions.contains (h);
+        
+        if (!v) {
+            definitions = definitions.insert (h, map<Pattern, transformation> {}.insert (p, transformation {t}));
+            return; 
+        }
+        
+        auto w = v->contains (p);
+        
+        if (!w) {
+            *v = v->insert (p, transformation {t});
+            return;
+        }
+        
+        if (w->type == t) return;
+        
+        throw exception {} << "conflicting declaration " << p << " : " << t;
+        
+    }
+    
+    void Machine::define (Pattern p, Expression e) {
+        Symbol h = head (p);
+        
+        auto v = definitions.contains (h);
+        
+        if (!v) {
+            definitions = definitions.insert (h, map<Pattern, transformation> {}.insert (p, transformation {e}));
+            return; 
+        }
+        
+        auto w = v->contains (p);
+        
+        if (!w) {
+            *v = v->insert (p, transformation {e});
+            return;
+        }
+        
+        if (w->expr.get () == nullptr) {
+            w->expr = e;
+            return;
+        }
+        
+        throw exception {} << "conflicting declaration " << p << " = " << e;
+    }
+    
+    void Machine::define (Pattern p, Type t, Expression e) {
+        Symbol h = head (p);
+        
+        auto v = definitions.contains (h);
+        
+        if (!v) {
+            definitions = definitions.insert (h, map<Pattern, transformation> {}.insert (p, transformation {t, e}));
+            return; 
+        }
+        
+        auto w = v->contains (p);
+        
+        if (!w) {
+            *v = v->insert (p, transformation {t, e});
+            return;
+        }
+        
+        if (w->type == t && w->expr.get () == nullptr) {
+            w->expr = e;
+            return;
+        }
+        
+        throw exception {} << "conflicting declaration " << p << " : " << t << " = " << e;
     }
 
 }

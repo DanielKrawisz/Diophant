@@ -13,6 +13,7 @@ namespace Diophant::expressions {
         }
         
         virtual std::ostream &write (std::ostream &) const = 0;
+        virtual Expression head () = 0;
     };
     
     inline abstract::~abstract() {}

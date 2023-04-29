@@ -21,16 +21,28 @@ namespace Diophant {
         
         void declare (Pattern, Type);
         void define (Pattern, Expression);
+        void define (Pattern, Type, Expression);
         
         Machine ();
-
+        
+    private:
+        struct transformation {
+            Type type;
+            expression expr;
+            
+            transformation (Type);
+            transformation (Expression);
+            transformation (Type, Expression);
+            
+            bool operator == (const transformation &) const;
+        };
+        
+        map<Symbol, map<Pattern, transformation>> definitions;
     };
 
     Expression inline evaluate (Expression &x, Machine &m) {
         return m.evaluate (x);
     }
-
-    maybe<list<entry<Symbol, Expression>>> match (Expression &, Pattern &);
 
 }
 
