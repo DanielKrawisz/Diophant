@@ -28,6 +28,12 @@ namespace Diophant {
         define (Pattern {"x.Q > y.Q"}, Type {"boolean"});
 */
     }
+        
+    map<Pattern, Machine::Transformation> Machine::operator [] (Symbol &x) const {
+        auto v = definitions.contains (x);
+        if (v) return *v;
+        return {};
+    }
 
     Expression Machine::evaluate (Expression &x) {
         Symbol *h = dynamic_cast<Symbol *> (root (x));
@@ -38,7 +44,7 @@ namespace Diophant {
 
         // note: we do nothing with types yet.
         for (auto p : ps) if (auto matches = match (x, p.Key); bool (matches))
-            return evaluate (cast (p.Value.type, replace (p.Value.expression, *matches)));
+            return evaluate (cast (p.Value.type, replace (p.Value.expr, *matches)));
 
         return x;
     }
@@ -49,14 +55,14 @@ namespace Diophant {
         auto v = definitions.contains (h);
         
         if (!v) {
-            definitions = definitions.insert (h, map<Pattern, transformation> {}.insert (p, transformation {t}));
+            definitions = definitions.insert (h, map<Pattern, Transformation> {}.insert (p, Transformation {t}));
             return; 
         }
         
         auto w = v->contains (p);
         
         if (!w) {
-            *v = v->insert (p, transformation {t});
+            *v = v->insert (p, Transformation {t});
             return;
         }
         
@@ -72,14 +78,14 @@ namespace Diophant {
         auto v = definitions.contains (h);
         
         if (!v) {
-            definitions = definitions.insert (h, map<Pattern, transformation> {}.insert (p, transformation {e}));
+            definitions = definitions.insert (h, map<Pattern, Transformation> {}.insert (p, Transformation {e}));
             return; 
         }
         
         auto w = v->contains (p);
         
         if (!w) {
-            *v = v->insert (p, transformation {e});
+            *v = v->insert (p, Transformation {e});
             return;
         }
         
@@ -97,14 +103,14 @@ namespace Diophant {
         auto v = definitions.contains (h);
         
         if (!v) {
-            definitions = definitions.insert (h, map<Pattern, transformation> {}.insert (p, transformation {t, e}));
+            definitions = definitions.insert (h, map<Pattern, Transformation> {}.insert (p, Transformation {t, e}));
             return; 
         }
         
         auto w = v->contains (p);
         
         if (!w) {
-            *v = v->insert (p, transformation {t, e});
+            *v = v->insert (p, Transformation {t, e});
             return;
         }
         

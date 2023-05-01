@@ -9,7 +9,7 @@ namespace Diophant {
         
         Type () {}
         
-        explicit Type (Expression);
+        explicit Type (Expression) {}
         
     };
 
@@ -48,6 +48,18 @@ namespace Diophant {
 
     maybe<replacements> inline match (Expression &e, Pattern &p) {
         return p.match (e);
+    }
+
+    std::partial_ordering inline operator <=> (const Type &, const Type &) {
+        return std::partial_ordering::equivalent;
+    }
+    
+    bool inline operator == (const Type &, const Type &) {
+        return true;
+    }
+    
+    std::ostream inline &operator << (std::ostream &o, Type &) {
+        return o;
     }
     
 }
