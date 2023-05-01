@@ -28,7 +28,7 @@ namespace Diophant {
     
     std::ostream &operator << (std::ostream &, Pattern &);
     
-    Symbol head (Pattern &); 
+    Symbol root (Pattern &); 
     
     using replacement = entry<Symbol, Expression>;
     using replacements = list<replacement>;

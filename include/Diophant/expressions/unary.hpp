@@ -3,6 +3,7 @@
 
 #include <Diophant/expressions/expressions.hpp>
 #include <Diophant/expression.hpp>
+#include <Diophant/expressions/symbol.hpp>
 
 namespace Diophant::expressions {
     
@@ -34,6 +35,10 @@ namespace Diophant::expressions {
         static Expression make (Expression &);
         
         std::ostream &write (std::ostream &) const override;
+        
+        const abstract *root () const override {
+            return &static_cast<const abstract &> (*symbol::make (unary_operator<X> ()));
+        }
     };
     
     using boolean_not = unary_expression<unary_operand::NOT>;

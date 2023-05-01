@@ -18,10 +18,18 @@ namespace Diophant {
             return (*this)->precedence ();
         }
         
+        const expressions::abstract *root () const {
+            return (*this)->root ();
+        }
+        
     };
     
     std::ostream inline &operator << (std::ostream &o, Expression &e) {
         return e.get () == nullptr ? o << "null" : e->write (o);
+    }
+    
+    const expressions::abstract inline *root (Expression &e) {
+        return e->root ();
     }
 
 }
@@ -61,10 +69,6 @@ namespace Diophant::make {
     Expression intuitionistic_and (Expression &, Expression &);
     Expression intuitionistic_or (Expression &, Expression &);
     Expression intuitionistic_implies (Expression &, Expression &);
-    
-    Expression inline null () {
-        return expression {};
-    }
 
 }
 

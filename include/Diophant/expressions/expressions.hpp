@@ -13,10 +13,17 @@ namespace Diophant::expressions {
         }
         
         virtual std::ostream &write (std::ostream &) const = 0;
-        virtual Expression head () = 0;
+        
+        virtual const abstract *root () const {
+            return nullptr;
+        }
     };
     
     inline abstract::~abstract() {}
+    
+    std::ostream inline &write_parens (std::ostream &o, const abstract &x, bool w) {
+        return w ? x.write (o << "(") << ")" : x.write (o);
+    }
     
 }
 

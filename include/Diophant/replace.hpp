@@ -5,7 +5,10 @@
 
 namespace Diophant {
     
-    Expression replace (Expression, list<entry<Symbol, Expression>>);
+    using replacement = entry<Symbol, Expression>;
+    using replacements = list<replacement>;
+    
+    Expression replace (Expression, replacements);
     
 }
 

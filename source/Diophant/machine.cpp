@@ -30,9 +30,11 @@ namespace Diophant {
     }
 
     Expression Machine::evaluate (Expression &x) {
-        Symbol h = head (x);
+        Symbol *h = dynamic_cast<Symbol *> (root (x));
+        
+        if (h == nullptr) return x;
 
-        auto ps = (*this)[h];
+        auto ps = (*this)[*h];
 
         // note: we do nothing with types yet.
         for (auto p : ps) if (auto matches = match (x, p.Key); bool (matches))
@@ -42,7 +44,7 @@ namespace Diophant {
     }
     
     void Machine::declare (Pattern p, Type t) {
-        Symbol h = head (p);
+        Symbol &h = dynamic_cast<Symbol &> (root (p));
         
         auto v = definitions.contains (h);
         
@@ -65,7 +67,7 @@ namespace Diophant {
     }
     
     void Machine::define (Pattern p, Expression e) {
-        Symbol h = head (p);
+        Symbol &h = dynamic_cast<Symbol &> (root (p));
         
         auto v = definitions.contains (h);
         
@@ -90,7 +92,7 @@ namespace Diophant {
     }
     
     void Machine::define (Pattern p, Type t, Expression e) {
-        Symbol h = head (p);
+        Symbol &h = dynamic_cast<Symbol &> (root (p));
         
         auto v = definitions.contains (h);
         

@@ -6,18 +6,26 @@
 namespace Diophant::expressions {
     
     struct symbol final: abstract {
-        std::string Name;
-        symbol (const std::string &x) : Name {x} {}
+        const std::string *Name;
+        
+        static const ptr<const symbol> &make (const std::string &);
+        
         std::ostream &write (std::ostream &) const override;
         
-        explicit symbol (Expression);
+        const abstract *root () const override {
+            return this;
+        }
+        
+    private:
+        symbol (const std::string &x) : Name {&x} {}
+        symbol () : Name {} {}
     };
     
 }
 
 namespace Diophant::make {
     Expression inline symbol (const std::string &x) {
-        return Diophant::expression {std::static_pointer_cast<const expressions::abstract> (std::make_shared<expressions::symbol> (x))};
+        return Diophant::expression {std::static_pointer_cast<const expressions::abstract> (expressions::symbol::make (x))};
     }
 }
 

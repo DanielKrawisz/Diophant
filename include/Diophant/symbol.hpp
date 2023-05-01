@@ -5,8 +5,6 @@
 
 namespace Diophant {
     using Symbol = const expressions::symbol;
-    
-    Symbol head (Expression &);    
 }
 
 namespace Diophant::expressions {

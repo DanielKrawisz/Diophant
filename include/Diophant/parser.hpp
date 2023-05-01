@@ -4,6 +4,8 @@
 #include <tao/pegtl.hpp>
 #include <Diophant/machine.hpp>
 #include <Diophant/expressions/values.hpp>
+#include <Diophant/expressions/null.hpp>
+#include <Diophant/expressions/apply.hpp>
 #include <Diophant/expressions/unary.hpp>
 #include <Diophant/expressions/binary.hpp>
 #include <Diophant/expressions/symbol.hpp>

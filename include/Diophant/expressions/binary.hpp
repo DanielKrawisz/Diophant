@@ -7,7 +7,6 @@
 namespace Diophant::expressions {
     
     enum class binary_operand : byte {
-        APPLY = 10,
         PLUS = 30, 
         MINUS = 40, 
         TIMES = 50, 
@@ -35,27 +34,26 @@ namespace Diophant::expressions {
     template <binary_operand X>
     constexpr const char *binary_operator () {
         switch (X) {
-            case binary_operand::APPLY : return " ";
-            case binary_operand::PLUS : return " + ";
-            case binary_operand::MINUS : return " - ";
-            case binary_operand::TIMES : return " - ";
-            case binary_operand::POWER : return " ^ ";
-            case binary_operand::DIVIDE : return " / ";
-            case binary_operand::EQUAL : return " == ";
-            case binary_operand::UNEQUAL : return " != ";
-            case binary_operand::GREATER_EQUAL : return " > ";
-            case binary_operand::LESS_EQUAL : return " <= ";
-            case binary_operand::GREATER : return " > ";
-            case binary_operand::LESS : return " < ";
-            case binary_operand::BOOLEAN_AND : return " && ";
-            case binary_operand::BOOLEAN_OR : return " || ";
-            case binary_operand::ARROW : return " -> ";
-            case binary_operand::INTUITIONISTIC_AND : return " & ";
-            case binary_operand::INTUITIONISTIC_OR : return " | ";
-            case binary_operand::INTUITIONISTIC_IMPLIES : return " => ";
+            case binary_operand::PLUS : return "+";
+            case binary_operand::MINUS : return "-";
+            case binary_operand::TIMES : return "-";
+            case binary_operand::POWER : return "^";
+            case binary_operand::DIVIDE : return "/";
+            case binary_operand::EQUAL : return "==";
+            case binary_operand::UNEQUAL : return "!=";
+            case binary_operand::GREATER_EQUAL : return ">";
+            case binary_operand::LESS_EQUAL : return "<=";
+            case binary_operand::GREATER : return ">";
+            case binary_operand::LESS : return "<";
+            case binary_operand::BOOLEAN_AND : return "&&";
+            case binary_operand::BOOLEAN_OR : return "||";
+            case binary_operand::ARROW : return "->";
+            case binary_operand::INTUITIONISTIC_AND : return "&";
+            case binary_operand::INTUITIONISTIC_OR : return "|";
+            case binary_operand::INTUITIONISTIC_IMPLIES : return "=>";
+            default : return "";
         }
     }
-    
     
     template <binary_operand X>
     struct binary_expression final : abstract {
@@ -70,9 +68,8 @@ namespace Diophant::expressions {
         
         static Expression make (Expression &, Expression &);
         std::ostream &write (std::ostream &) const override;
+        const abstract *root () const override;
     };
-    
-    using apply = binary_expression<binary_operand::APPLY>;
     
     using plus = binary_expression<binary_operand::PLUS>;
     using minus = binary_expression<binary_operand::MINUS>;
@@ -98,10 +95,6 @@ namespace Diophant::expressions {
 }
 
 namespace Diophant::make {
-    
-    Expression inline apply (Expression &l, Expression &r) {
-        return expressions::apply::make (l, r);
-    }
     
     Expression inline plus (Expression &l, Expression &r) {
         return expressions::plus::make (l, r);
@@ -180,18 +173,21 @@ namespace Diophant::expressions {
         return Diophant::expression {std::static_pointer_cast<const abstract> (std::make_shared<binary_expression<X>> (l, r))};
     }
     
-    std::ostream inline &write_parens (std::ostream &o, Expression &x, bool w) {
-        return w ? x->write (o << "(") << ")" : x->write (o);
-    }
-        
     template <binary_operand X>
     std::ostream inline &binary_expression<X>::write (std::ostream &o) const {
         return write_parens (
-            write_parens (o, left, left->precedence () > this->precedence ()) << binary_operator<X> (), 
-                right, right->precedence () > this->precedence ());
+            write_parens (o, 
+                *left, 
+                left->precedence () > this->precedence ()) << " " << binary_operator<X> () << " ", 
+            *right, 
+            right->precedence () > this->precedence ());
     }
+    
+    template <binary_operand X>
+    const abstract inline *binary_expression<X>::root () const {
+        return &static_cast<const abstract &> (*symbol::make (binary_operator<X> ()));
+    }
+    
 }
 
-
 #endif
-

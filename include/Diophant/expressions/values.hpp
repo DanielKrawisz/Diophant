@@ -3,6 +3,7 @@
 
 #include <Diophant/expressions/expressions.hpp>
 #include <Diophant/expression.hpp>
+#include <Diophant/expressions/symbol.hpp>
 
 namespace Diophant::expressions {
     
@@ -13,6 +14,7 @@ namespace Diophant::expressions {
         
         static Expression make (const X &);
         std::ostream &write (std::ostream &) const override;
+        
     };
     
     using boolean = value<bool>;
