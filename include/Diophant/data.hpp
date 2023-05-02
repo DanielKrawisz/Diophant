@@ -1,5 +1,5 @@
-#ifndef DIOPHANT_TYPES
-#define DIOPHANT_TYPES
+#ifndef DIOPHANT_DATA
+#define DIOPHANT_DATA
 
 #include <data/tools.hpp>
 #include <data/math.hpp>
@@ -7,6 +7,9 @@
 
 namespace Diophant {
     using namespace data;
+
+    struct expression;
+    using Expression = const expression;
 }
 
 #endif

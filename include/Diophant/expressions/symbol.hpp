@@ -1,7 +1,8 @@
 #ifndef DIOPHANT_EXPRESSIONS_SYMBOL
 #define DIOPHANT_EXPRESSIONS_SYMBOL
 
-#include <Diophant/expression.hpp>
+#include <Diophant/symbol.hpp>
+#include <Diophant/expressions/expressions.hpp>
 
 namespace Diophant::expressions {
     
@@ -16,23 +17,28 @@ namespace Diophant::expressions {
             return this;
         }
         
+        symbol () : Name {nullptr} {}
+        
+        bool valid () const {
+            return Name != nullptr;
+        }
+        
+        operator Pattern () const override;
+        
     private:
         symbol (const std::string &x) : Name {&x} {}
-        symbol () : Name {} {}
     };
-    
-}
-
-namespace Diophant::make {
-    Expression inline symbol (const std::string &x) {
-        return Diophant::expression {std::static_pointer_cast<const expressions::abstract> (expressions::symbol::make (x))};
-    }
-}
-
-namespace Diophant::expressions {
     
     std::ostream inline &symbol::write (std::ostream &o) const {
         return o << Name;
+    }
+    
+    std::strong_ordering inline operator <=> (const Symbol &a, const Symbol &b) {
+        return a.Name <=> b.Name;
+    }
+    
+    bool inline operator == (const Symbol &a, const Symbol &b) {
+        return a.Name == b.Name;
     }
     
 }

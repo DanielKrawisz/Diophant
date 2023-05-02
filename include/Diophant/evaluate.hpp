@@ -1,7 +1,7 @@
 #ifndef DIOPHANT_EVALUATE
 #define DIOPHANT_EVALUATE
 
-#include <Diophant/types.hpp>
+#include <Diophant/data.hpp>
 
 namespace Diophant {
     

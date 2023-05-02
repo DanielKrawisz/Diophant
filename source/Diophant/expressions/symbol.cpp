@@ -1,4 +1,5 @@
-#include<Diophant/expressions/symbol.hpp>
+#include <Diophant/expressions/symbol.hpp>
+#include <Diophant/pattern.hpp>
 
 namespace Diophant::expressions {
     

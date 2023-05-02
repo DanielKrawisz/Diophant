@@ -1,19 +1,10 @@
 #ifndef DIOPHANT_MACHINE
 #define DIOPHANT_MACHINE
 
-#include <Diophant/pattern.hpp>
+#include <Diophant/match.hpp>
+#include <Diophant/type.hpp>
 
 namespace Diophant {
-
-    // throws an exception if the cast is not valid. For now every cast is valid.
-    Expression inline cast (const Type &, Expression &x) {
-        return x;
-    }
-
-    struct Cast {
-        Type type;
-        Expression expression;
-    };
 
     struct Machine {
         Expression evaluate (Expression &);

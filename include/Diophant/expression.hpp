@@ -3,6 +3,7 @@
 
 #include <Diophant/evaluate.hpp>
 #include <Diophant/expressions/expressions.hpp>
+#include <Diophant/replace.hpp>
 
 namespace Diophant {
     
@@ -21,6 +22,10 @@ namespace Diophant {
         const expressions::abstract *root () const {
             return (*this)->root ();
         }
+        
+        operator Pattern () const;
+        
+        maybe<replacements> match (Expression &) const;
         
     };
     

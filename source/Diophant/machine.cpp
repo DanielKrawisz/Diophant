@@ -43,7 +43,7 @@ namespace Diophant {
         auto ps = (*this)[*h];
 
         // note: we do nothing with types yet.
-        for (auto p : ps) if (auto matches = match (x, p.Key); bool (matches))
+        for (auto p : ps) if (auto matches = match (p.Key, x); bool (matches))
             return evaluate (cast (p.Value.type, replace (p.Value.expr, *matches)));
 
         return x;
