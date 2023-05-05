@@ -1,10 +1,29 @@
 #ifndef DIOPHANT_MACHINE
 #define DIOPHANT_MACHINE
 
-#include <Diophant/match.hpp>
+#include <Diophant/evaluate.hpp>
 #include <Diophant/type.hpp>
+#include <Diophant/replace.hpp>
+#include <Diophant/symbol.hpp>
 
 namespace Diophant {
+
+    struct pattern {
+        Symbol root;
+        stack<Expression> parameters;
+        
+        pattern () : root {}, parameters {} {}
+        pattern (Symbol &x) : root {x}, parameters {} {}
+        pattern (Symbol &x, stack<Expression> p) : root {x}, parameters {p} {}
+        
+        bool valid () const {
+            return root.valid () && parameters.valid ();
+        }
+    };
+    
+    Symbol inline &root (Pattern &p) {
+        return p.root;
+    }
 
     struct Machine {
         Expression evaluate (Expression &);
@@ -12,6 +31,13 @@ namespace Diophant {
         void declare (Pattern, Type);
         void define (Pattern, Expression);
         void define (Pattern, Type, Expression);
+        
+        maybe<replacements> match (Pattern &, Expression &) const;
+        
+        // every cast is valid for now. 
+        bool cast (const Type &, const Expression &) const {
+            return true;
+        }
         
         Machine ();
         

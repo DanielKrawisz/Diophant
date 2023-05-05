@@ -4,6 +4,7 @@
 #include <Diophant/evaluate.hpp>
 #include <Diophant/expressions/expressions.hpp>
 #include <Diophant/replace.hpp>
+#include <Diophant/pattern.hpp>
 
 namespace Diophant {
     
@@ -25,7 +26,7 @@ namespace Diophant {
         
         operator Pattern () const;
         
-        maybe<replacements> match (Expression &) const;
+        maybe<replacements> match (Expression &, const Machine &) const;
         
     };
     
@@ -36,6 +37,8 @@ namespace Diophant {
     const expressions::abstract inline *root (Expression &e) {
         return e->root ();
     }
+    
+    struct Type;
 
 }
 
@@ -74,6 +77,8 @@ namespace Diophant::make {
     Expression intuitionistic_and (Expression &, Expression &);
     Expression intuitionistic_or (Expression &, Expression &);
     Expression intuitionistic_implies (Expression &, Expression &);
+    
+    Expression pattern (Symbol &, const Type &);
 
 }
 

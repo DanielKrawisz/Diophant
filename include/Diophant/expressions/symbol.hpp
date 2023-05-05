@@ -23,8 +23,6 @@ namespace Diophant::expressions {
             return Name != nullptr;
         }
         
-        operator Pattern () const override;
-        
     private:
         symbol (const std::string &x) : Name {&x} {}
     };

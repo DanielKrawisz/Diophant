@@ -37,7 +37,6 @@ add_library (Diophant STATIC
     source/Diophant/expression.cpp
     source/Diophant/expressions/values.cpp
     source/Diophant/expressions/symbol.cpp
-    source/Diophant/match.cpp
     source/Diophant/parser.cpp
     
 )

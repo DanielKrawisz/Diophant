@@ -1,7 +1,7 @@
 #ifndef DIOPHANT_EXPRESSIONS_EXPRESSIONS
 #define DIOPHANT_EXPRESSIONS_EXPRESSIONS
 
-#include <Diophant/pattern.hpp>
+#include <Diophant/data.hpp>
 
 namespace Diophant::expressions {
     
@@ -17,8 +17,6 @@ namespace Diophant::expressions {
         virtual const abstract *root () const {
             return nullptr;
         }
-        
-        virtual operator Pattern () const;
         
     };
     
