@@ -1,7 +1,7 @@
 #ifndef DIOPHANT_EXPRESSIONS_PATTERN
 #define DIOPHANT_EXPRESSIONS_PATTERN
 
-#include <Diophant/machine.hpp>
+#include <Diophant/expressions/expressions.hpp>
 
 namespace Diophant::expressions {
     
@@ -11,12 +11,20 @@ namespace Diophant::expressions {
         
         static const ptr<const symbol> &make (const std::string &);
         
-        std::ostream &write (std::ostream &) const override;
+        std::ostream &write (std::ostream &) const override {
+            throw method::unimplemented {"pattern write"};
+        }
         
         pattern (const symbol &x) : var {x}, type {} {}
         pattern (const symbol &x, const Type &t) : var {x}, type {t} {}
+
+        bool operator == (const abstract &) const override {
+            throw method::unimplemented {"pattern =="};
+        }
         
-        maybe<replacements> match (Expression &e, const Machine &m) const;
+        maybe<replacements> match (Expression &e, const Machine &m) const {
+            throw method::unimplemented {"pattern =="};
+        }
         
     };
     
@@ -27,13 +35,13 @@ namespace Diophant::make {
         return expression {std::static_pointer_cast<const expressions::abstract> (std::make_shared<const expressions::pattern> (x, t))};
     }
 }
-
+/*
 namespace Diophant::expressions {
         
     maybe<replacements> inline pattern::match (Expression &e, const Machine &m) const {
         return m.cast (type, e) ? maybe<replacements> {replacements {replacement {var, e}}} : maybe<replacements> {};
     }
-}
+}*/
 
 #endif
 

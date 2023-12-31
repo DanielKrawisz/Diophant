@@ -1,5 +1,4 @@
 #include <Diophant/machine.hpp>
-#include <Diophant/expressions/pattern.hpp>
 #include <Diophant/expressions/symbol.hpp>
 #include <Diophant/expressions/apply.hpp>
 
@@ -10,10 +9,10 @@ namespace Diophant {
         const expressions::pattern *p = dynamic_cast<const expressions::pattern *> (n);
         
         if (p == nullptr) return *this == e ? maybe<replacements> {replacements {}} : maybe<replacements> {};
-        
+
         return p->match (e, m);
     }
-    
+
     expression::operator Pattern () const {
         const expressions::abstract *n = this->get ();
         

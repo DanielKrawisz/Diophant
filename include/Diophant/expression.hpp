@@ -11,7 +11,8 @@ namespace Diophant {
     struct expression : ptr<const expressions::abstract> {
         
         using ptr<const expressions::abstract>::ptr;
-        expression (ptr<const expressions::abstract> &&p) : ptr<const expressions::abstract> {p} {}
+        expression () : ptr<const expressions::abstract> {} {}
+        expression (ptr<const expressions::abstract> p) : ptr<const expressions::abstract> {p} {}
         
         // parse some code and read in an expression.
         expression (const string &);
@@ -27,16 +28,19 @@ namespace Diophant {
         operator Pattern () const;
         
         maybe<replacements> match (Expression &, const Machine &) const;
+
+        explicit operator std::string () const;
+
+        // an expression is valid if it is not a pattern.
+        bool valid () const {
+            throw method::unimplemented {"expression::valid"};
+        }
         
     };
     
-    std::ostream inline &operator << (std::ostream &o, Expression &e) {
-        return e.get () == nullptr ? o << "null" : e->write (o);
-    }
+    std::ostream inline &operator << (std::ostream &o, Expression &e);
     
-    const expressions::abstract inline *root (Expression &e) {
-        return e->root ();
-    }
+    const expressions::abstract inline *root (Expression &e);
     
     struct Type;
 
@@ -47,7 +51,7 @@ namespace Diophant::make {
     Expression null ();
     Expression boolean (bool b);
     Expression rational (const data::Q &q);
-    Expression symbol (const data::string &x);
+    Expression symbol (const std::string &x);
     Expression string (const data::string &str);
     Expression list (const data::list<Expression> &ls);
     Expression object (const data::list<data::entry<data::string, Expression>> &x);
@@ -80,6 +84,34 @@ namespace Diophant::make {
     
     Expression pattern (Symbol &, const Type &);
 
+}
+
+namespace Diophant {
+
+    std::ostream inline &operator << (std::ostream &o, Expression &e) {
+        return e.get () == nullptr ? o << "null" : e->write (o);
+    }
+
+    const expressions::abstract inline *root (Expression &e) {
+        return e->root ();
+    }
+
+    inline expression::operator std::string () const {
+        std::stringstream ss;
+        ss << *this;
+        return ss.str ();
+    }
+
+    bool inline operator == (Expression &a, Expression &b) {
+        return a.get () == nullptr ? b.get () == nullptr : b.get () == nullptr ? false : *a == *b;
+    }
+
+}
+
+namespace Diophant::make {
+    Expression inline null () {
+        return expression {};
+    }
 }
 
 #endif

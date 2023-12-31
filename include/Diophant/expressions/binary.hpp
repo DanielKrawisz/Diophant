@@ -69,6 +69,8 @@ namespace Diophant::expressions {
         static Expression make (Expression &, Expression &);
         std::ostream &write (std::ostream &) const override;
         const abstract *root () const override;
+
+        bool operator == (const abstract &) const override;
     };
     
     using plus = binary_expression<binary_operand::PLUS>;
@@ -186,6 +188,16 @@ namespace Diophant::expressions {
     template <binary_operand X>
     const abstract inline *binary_expression<X>::root () const {
         return &static_cast<const abstract &> (*symbol::make (binary_operator<X> ()));
+    }
+
+    template <binary_operand X>
+    bool inline binary_expression<X>::operator == (const abstract &a) const {
+        try {
+            const binary_expression<X> &b = dynamic_cast<const binary_expression<X> &> (a);
+            return left == b.left && right == b.right;
+        } catch (std::bad_cast) {
+            return false;
+        }
     }
     
 }

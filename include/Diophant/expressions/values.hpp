@@ -1,9 +1,9 @@
 #ifndef DIOPHANT_EXPRESSIONS_VALUES
 #define DIOPHANT_EXPRESSIONS_VALUES
 
+#include <Diophant/replace.hpp>
 #include <Diophant/expressions/expressions.hpp>
 #include <Diophant/expression.hpp>
-#include <Diophant/expressions/symbol.hpp>
 
 namespace Diophant::expressions {
     
@@ -14,14 +14,16 @@ namespace Diophant::expressions {
         
         static Expression make (const X &);
         std::ostream &write (std::ostream &) const override;
+
+        bool operator == (const abstract &) const override;
         
     };
     
     using boolean = value<bool>;
     using rational = value<data::Q>;
     using list = value<data::stack<Expression>>;
-    using object = value<data::stack<entry<std::string, Expression>>>;
-    using string = value<std::string>;
+    using object = value<data::stack<entry<data::string, Expression>>>;
+    using string = value<data::string>;
 }
 
 namespace Diophant::make {
@@ -34,7 +36,7 @@ namespace Diophant::make {
         return expressions::rational::make (n);
     }
     
-    Expression inline string (const std::string &x) {
+    Expression inline string (const data::string &x) {
         return expressions::string::make (x);
     }
     
@@ -42,7 +44,7 @@ namespace Diophant::make {
         return expressions::list::make (z);
     };
     
-    Expression inline object (data::stack<entry<std::string, Expression>> z) {
+    Expression inline object (data::stack<entry<data::string, Expression>> z) {
         return expressions::object::make (z);
     };
     
@@ -62,16 +64,25 @@ namespace Diophant::expressions {
         return o << q;
     }
     
-    std::ostream inline &write (std::ostream &o, const std::string &x) {
-        return o << "\"" << x << "\"";
+    std::ostream inline &write (std::ostream &o, const data::string &x) {
+        return o << x;
     }
     
     std::ostream &write (std::ostream &o, data::stack<Expression>);
-    std::ostream &write (std::ostream &o, data::stack<entry<std::string, Expression>>);
-    
+    std::ostream &write (std::ostream &o, data::stack<entry<data::string, Expression>>);
+
     template <typename X>
     std::ostream inline &value<X>::write (std::ostream &o) const {
         return expressions::write (o, val);
+    }
+
+    template <typename X>
+    bool inline value<X>::operator == (const abstract &a) const {
+        try {
+            return val == dynamic_cast<const value<X> &> (a).val;
+        } catch (std::bad_cast) {
+            return false;
+        }
     }
 }
 

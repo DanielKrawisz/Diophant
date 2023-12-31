@@ -19,6 +19,8 @@ namespace Diophant::expressions {
         
         const abstract *root () const override;
         std::ostream &write (std::ostream &) const override;
+
+        bool operator == (const abstract &) const override;
         
     };
     
@@ -46,6 +48,15 @@ namespace Diophant::expressions {
     const abstract inline *apply::root () const {
         auto a = dynamic_cast<const apply *> (function.get ()); 
         return a == nullptr ? &*this->function : a->root ();
+    }
+
+    bool inline apply::operator == (const abstract &a) const {
+        try {
+            const apply &b = dynamic_cast<const apply &> (a);
+            return function == b.function && argument == b.argument;
+        } catch (std::bad_cast) {
+            return false;
+        }
     }
     
 }

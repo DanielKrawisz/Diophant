@@ -1,7 +1,7 @@
 #ifndef DIOPHANT_REPLACE
 #define DIOPHANT_REPLACE
 
-#include <Diophant/expressions/symbol.hpp>
+#include <Diophant/symbol.hpp>
 
 namespace Diophant {
     

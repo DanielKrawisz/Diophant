@@ -7,7 +7,7 @@
 namespace Diophant {
     
     const expressions::abstract *root (Expression &);
-    Symbol &root (Pattern &); 
+    //Symbol &root (Pattern &);
     
 }
 

@@ -15,9 +15,8 @@ class DiophantConan(ConanFile):
     exports_sources = "*"
     requires = [
         "boost/1.80.0",
-        "taocpp-pegtl/3.2.7",
         "gmp/6.2.1",
-        "data/v0.0.25@proofofwork/unstable",
+        "data/v0.0.26@proofofwork/stable",
         "gtest/1.12.1"]
     
     def set_version (self):

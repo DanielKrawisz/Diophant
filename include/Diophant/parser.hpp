@@ -4,7 +4,6 @@
 #include <tao/pegtl.hpp>
 #include <Diophant/machine.hpp>
 #include <Diophant/expressions/values.hpp>
-#include <Diophant/expressions/null.hpp>
 #include <Diophant/expressions/apply.hpp>
 #include <Diophant/expressions/unary.hpp>
 #include <Diophant/expressions/binary.hpp>
@@ -135,11 +134,21 @@ namespace parse {
 
 namespace Diophant {
 
+    struct User {
+        // Read a line of user input.
+        virtual maybe<std::string> read () = 0;
+        // write a result to the user.
+        virtual void write (const std::string &) = 0;
+    };
+
     namespace pegtl = tao::pegtl;
 
     struct Parser {
-        Machine machine;
+        Machine machine {};
         data::stack<Expression> stack {};
+        User &user;
+
+        Parser (User &u) : user {u} {}
 
         void read_symbol (const data::string &in);
         void read_string (const data::string &in);
@@ -366,10 +375,10 @@ namespace Diophant {
 
     template <> struct eval_action<parse::statement> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input&, Parser &eval) {
             if (data::size (eval.stack) == 1) {
                 auto v = evaluate (eval.stack.first (), eval.machine);
-                std::cout << "\n result: " << v << std::endl;
+                eval.user.write (std::string (v));
                 eval.stack = data::stack<Expression> {};
             }
         }

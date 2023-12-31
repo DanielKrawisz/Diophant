@@ -6,7 +6,7 @@
 namespace Diophant::expressions {
     
     struct abstract {
-        virtual ~abstract() = 0;
+        virtual ~abstract () = 0;
         
         virtual uint32 precedence () const {
             return 0;
@@ -17,10 +17,12 @@ namespace Diophant::expressions {
         virtual const abstract *root () const {
             return nullptr;
         }
+
+        virtual bool operator == (const abstract &) const = 0;
         
     };
     
-    inline abstract::~abstract() {}
+    inline abstract::~abstract () {}
     
     std::ostream inline &write_parens (std::ostream &o, const abstract &x, bool w) {
         return w ? x.write (o << "(") << ")" : x.write (o);

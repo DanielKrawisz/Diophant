@@ -4,23 +4,23 @@
 #include <Diophant/evaluate.hpp>
 #include <Diophant/type.hpp>
 #include <Diophant/replace.hpp>
-#include <Diophant/symbol.hpp>
+#include <Diophant/expressions/symbol.hpp>
+#include <Diophant/expressions/pattern.hpp>
 
 namespace Diophant {
-
     struct pattern {
         Symbol root;
         stack<Expression> parameters;
-        
+
         pattern () : root {}, parameters {} {}
         pattern (Symbol &x) : root {x}, parameters {} {}
         pattern (Symbol &x, stack<Expression> p) : root {x}, parameters {p} {}
-        
+
         bool valid () const {
             return root.valid () && parameters.valid ();
         }
     };
-    
+
     Symbol inline &root (Pattern &p) {
         return p.root;
     }
@@ -68,6 +68,22 @@ namespace Diophant {
             
     bool inline Machine::Transformation::operator == (const Transformation &t) const {
         return type == t.type && expr == t.expr;
+    }
+
+    bool inline operator == (Pattern &, Pattern &) {
+        throw method::unimplemented {"pattern == "};
+    }
+
+    std::partial_ordering inline operator <=> (const Pattern &, const Pattern &) {
+        throw method::unimplemented {"pattern <=> "};
+    }
+
+    std::ostream inline &operator << (std::ostream &, Pattern &) {
+        throw method::unimplemented {"pattern << "};
+    }
+
+    Expression inline replace (Expression, replacements) {
+        throw method::unimplemented {"replace"};
     }
 
 }

@@ -3,11 +3,12 @@
 
 #include <Diophant/symbol.hpp>
 #include <Diophant/expressions/expressions.hpp>
+#include <Diophant/expression.hpp>
 
 namespace Diophant::expressions {
     
     struct symbol final: abstract {
-        const std::string *Name;
+        const std::string *name;
         
         static const ptr<const symbol> &make (const std::string &);
         
@@ -17,28 +18,48 @@ namespace Diophant::expressions {
             return this;
         }
         
-        symbol () : Name {nullptr} {}
+        symbol () : name {nullptr} {}
         
         bool valid () const {
-            return Name != nullptr;
+            return name != nullptr;
         }
+
+        bool operator == (const abstract &) const override;
         
     private:
-        symbol (const std::string &x) : Name {&x} {}
+        symbol (const std::string &x) : name {&x} {}
     };
     
     std::ostream inline &symbol::write (std::ostream &o) const {
-        return o << Name;
+        return o << name;
     }
     
     std::strong_ordering inline operator <=> (const Symbol &a, const Symbol &b) {
-        return a.Name <=> b.Name;
+        return *a.name <=> *b.name;
     }
     
     bool inline operator == (const Symbol &a, const Symbol &b) {
-        return a.Name == b.Name;
+        return a.name == b.name;
     }
     
+}
+
+namespace Diophant::make {
+
+    Expression inline symbol (const std::string &x) {
+        return expressions::symbol::make (x);
+    }
+
+}
+
+namespace Diophant::expressions {
+    bool inline symbol::operator == (const abstract &a) const {
+        try {
+            return name == dynamic_cast<const symbol &> (a).name;
+        } catch (std::bad_cast) {
+            return false;
+        }
+    }
 }
 
 #endif

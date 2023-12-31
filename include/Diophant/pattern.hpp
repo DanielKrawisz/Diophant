@@ -12,7 +12,7 @@ namespace Diophant {
     std::partial_ordering operator <=> (const Pattern &, const Pattern &);
     
     std::ostream &operator << (std::ostream &, Pattern &);
-    
+
 }
 
 #endif

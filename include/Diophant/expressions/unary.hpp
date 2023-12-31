@@ -39,6 +39,8 @@ namespace Diophant::expressions {
         const abstract *root () const override {
             return &static_cast<const abstract &> (*symbol::make (unary_operator<X> ()));
         }
+
+        bool operator == (const abstract &) const override;
     };
     
     using boolean_not = unary_expression<unary_operand::NOT>;
@@ -67,6 +69,15 @@ namespace Diophant::expressions {
     template <unary_operand X>
     std::ostream inline &unary_expression<X>::write (std::ostream &o) const {
         return expression->write (o << unary_operator<X> () << " ");
+    }
+
+    template <unary_operand X>
+    bool inline unary_expression<X>::operator == (const abstract &a) const {
+        try {
+            return expression == dynamic_cast<const unary_expression<X> &> (a).expression;
+        } catch (std::bad_cast) {
+            return false;
+        }
     }
 }
 
