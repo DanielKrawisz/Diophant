@@ -30,6 +30,15 @@ namespace Diophant {
         return last;
     }
 
+    subject::subject (Symbol &x, stack<Expression> z) : subject {x} {
+        parameters.resize (z.size ());
+
+        for (auto &p : parameters) {
+            p = pattern {z.first ()};
+            z = z.rest ();
+        }
+    }
+
     std::ostream &operator << (std::ostream &o, const predicate &p) {
         o << ": " << p.type;
         if (p.expr) o << " = " << *p.expr;
@@ -135,13 +144,29 @@ namespace Diophant {
 
     subject subject::read (Expression &x) {
         auto p = x.get ();
-        if (p == nullptr) throw exception {} << "cannot define " << x;
+        if (p == nullptr) goto fail;
 
         if (auto px = dynamic_cast<Symbol *> (p); px != nullptr)
             return subject (*px);
 
-        if (auto pc = dynamic_cast<const expressions::call *> (p); pc != nullptr)
-            throw exception {} << "cannot define " << x;
+        if (auto pc = dynamic_cast<const expressions::call *> (p); pc != nullptr) {
+            expression fun = pc->function;
+            stack<Expression> arguments {pc->argument};
+
+            while (true) {
+                const auto *f = fun.get ();
+                if (const auto *fx = dynamic_cast<Symbol *> (f); bool (fx))
+                    return subject {*fx, arguments};
+
+                if (const auto *fc = dynamic_cast<const expressions::call *> (f); bool (fc)) {
+                    fun = fc->function;
+                    arguments <<= fc->argument;
+                    continue;
+                }
+
+                goto fail;
+            }
+        }
 
         if (auto pb = dynamic_cast<const expressions::binary_expression *> (p); pb != nullptr)
             throw exception {} << "cannot define " << x;
@@ -149,7 +174,8 @@ namespace Diophant {
         if (auto pu = dynamic_cast<const expressions::unary_expression *> (p); pu != nullptr)
             throw exception {} << "cannot define " << x;
 
-        throw exception {} << "cannot define" << x;
+        fail:
+        throw exception {} << "cannot define " << x;
     }
 
     Machine::Machine () {

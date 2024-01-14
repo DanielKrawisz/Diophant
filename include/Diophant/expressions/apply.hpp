@@ -8,10 +8,7 @@ namespace Diophant::expressions {
     
     struct call final : abstract {
         
-        uint32 precedence () const override {
-            return 100;
-        }
-        
+        uint32 precedence () const override;
         Expression function;
         Expression argument;
         
@@ -23,6 +20,10 @@ namespace Diophant::expressions {
         
     };
     
+}
+
+namespace Diophant {
+    constexpr precedence call_precedence = 100;
 }
 
 namespace Diophant::make {
@@ -51,6 +52,10 @@ namespace Diophant::expressions {
         } catch (std::bad_cast) {
             return false;
         }
+    }
+
+    Diophant::precedence inline call::precedence () const {
+        return call_precedence;
     }
     
 }

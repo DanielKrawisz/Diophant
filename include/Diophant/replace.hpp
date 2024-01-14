@@ -8,6 +8,7 @@ namespace Diophant {
 
     struct pattern : expression {
         pattern (Expression &ex) : expression {ex} {}
+        pattern () : expression {} {}
     };
     
     using replacement = entry<Symbol, Expression>;

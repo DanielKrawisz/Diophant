@@ -17,7 +17,7 @@ namespace Diophant {
         // parse some code and read in an expression.
         expression (const string &);
 
-        uint32 precedence () const {
+        Diophant::precedence precedence () const {
             return (*this)->precedence ();
         }
         
@@ -29,6 +29,8 @@ namespace Diophant {
         bool valid () const {
             throw method::unimplemented {"expression::valid"};
         }
+
+        std::ostream &write (std::ostream &, Diophant::precedence precedence) const;
         
     };
     
@@ -84,13 +86,18 @@ namespace Diophant::make {
 namespace Diophant {
 
     std::ostream inline &operator << (std::ostream &o, Expression &e) {
-        return e.get () == nullptr ? o << "null" : e->write (o);
+        return e.get () == nullptr ? o << "null" : e.write (o, max_precedence);
     }
 
     inline expression::operator std::string () const {
         std::stringstream ss;
         ss << *this;
         return ss.str ();
+    }
+
+    std::ostream inline &expression::write (std::ostream &o, Diophant::precedence precedence) const {
+        if (precedence < (*this)->precedence ()) return (*this)->write (o << "(") << ")";
+        return (*this)->write (o);
     }
 
 }

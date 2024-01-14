@@ -5,7 +5,7 @@
 #include <Diophant/type.hpp>
 #include <Diophant/replace.hpp>
 #include <Diophant/expressions/symbol.hpp>
-#include <Diophant/expressions/pattern.hpp>
+#include <Diophant/expressions/apply.hpp>
 
 namespace Diophant {
 
@@ -20,6 +20,7 @@ namespace Diophant {
 
         subject (Symbol &x) : root {x}, parameters {} {}
         subject (Symbol &x, const cross<pattern> &p) : root {x}, parameters {p} {}
+        subject (Symbol &x, stack<Expression>);
 
         static subject read (Expression &);
     };
@@ -77,7 +78,9 @@ namespace Diophant {
     }
 
     std::ostream inline &operator << (std::ostream &o, const subject &z) {
-        return o << z.root << " " << z.parameters;
+        o << z.root;
+        for (const auto &e : z.parameters) e.write (o << " ", call_precedence);
+        return o;
     }
 
 }
