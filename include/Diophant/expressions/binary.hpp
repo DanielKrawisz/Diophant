@@ -25,14 +25,12 @@ namespace Diophant::expressions {
         INTUITIONISTIC_OR = 130, 
         INTUITIONISTIC_IMPLIES = 140
     };
-    
-    template <binary_operand X>
-    constexpr uint32 binary_precedence () {
+
+    constexpr uint32 binary_precedence (binary_operand X) {
         return 100 * uint32 (X);
     }
     
-    template <binary_operand X>
-    constexpr const char *binary_operator () {
+    constexpr const char *binary_operator (binary_operand X) {
         switch (X) {
             case binary_operand::PLUS : return "+";
             case binary_operand::MINUS : return "-";
@@ -55,146 +53,133 @@ namespace Diophant::expressions {
         }
     }
     
-    template <binary_operand X>
     struct binary_expression final : abstract {
         
         uint32 precedence () const override {
-            return binary_precedence<X> ();
+            return binary_precedence (op);
         }
-        
+
+        binary_operand op;
         Expression left;
         Expression right;
-        binary_expression (Expression &l, Expression &r) : left {l}, right {r} {}
+        binary_expression (binary_operand x, Expression &l, Expression &r) : op {x}, left {l}, right {r} {}
         
-        static Expression make (Expression &, Expression &);
+        static Expression make (binary_operand op, Expression &, Expression &);
         std::ostream &write (std::ostream &) const override;
-        const abstract *root () const override;
 
         bool operator == (const abstract &) const override;
     };
-    
-    using plus = binary_expression<binary_operand::PLUS>;
-    using minus = binary_expression<binary_operand::MINUS>;
-    using times = binary_expression<binary_operand::TIMES>;
-    using power = binary_expression<binary_operand::POWER>;
-    using divide = binary_expression<binary_operand::DIVIDE>;
-    
-    using equal = binary_expression<binary_operand::EQUAL>;
-    using unequal = binary_expression<binary_operand::UNEQUAL>;
-    using greater_equal = binary_expression<binary_operand::GREATER_EQUAL>;
-    using less_equal = binary_expression<binary_operand::LESS_EQUAL>;
-    using greater = binary_expression<binary_operand::GREATER>;
-    using less = binary_expression<binary_operand::LESS>;
-    
-    using boolean_and = binary_expression<binary_operand::BOOLEAN_AND>;
-    using boolean_or = binary_expression<binary_operand::BOOLEAN_OR>;
-    using arrow = binary_expression<binary_operand::ARROW>;
-    
-    using intuitionistic_and = binary_expression<binary_operand::INTUITIONISTIC_AND>;
-    using intuitionistic_or = binary_expression<binary_operand::INTUITIONISTIC_OR>;
-    using intuitionistic_implies = binary_expression<binary_operand::INTUITIONISTIC_IMPLIES>;
     
 }
 
 namespace Diophant::make {
     
     Expression inline plus (Expression &l, Expression &r) {
-        return expressions::plus::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::PLUS, l, r);
     }
     
     Expression inline minus (Expression &l, Expression &r) {
-        return expressions::minus::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::MINUS, l, r);
     }
     
     Expression inline times (Expression &l, Expression &r) {
-        return expressions::times::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::TIMES, l, r);
     }
     
     Expression inline power (Expression &l, Expression &r) {
-        return expressions::power::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::POWER, l, r);
     }
     
     Expression inline divide (Expression &l, Expression &r) {
-        return expressions::divide::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::DIVIDE, l, r);
     }
     
     Expression inline equal (Expression &l, Expression &r) {
-        return expressions::equal::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::EQUAL, l, r);
     }
     
     Expression inline unequal (Expression &l, Expression &r) {
-        return expressions::unequal::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::UNEQUAL, l, r);
     }
     
     Expression inline greater_equal (Expression &l, Expression &r) {
-        return expressions::greater_equal::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::GREATER_EQUAL, l, r);
     }
     
     Expression inline less_equal (Expression &l, Expression &r) {
-        return expressions::less_equal::make (l, r);
+        using namespace expressions;
+        return expressions::binary_expression::make (binary_operand::LESS_EQUAL, l, r);
     }
     
     Expression inline greater (Expression &l, Expression &r) {
-        return expressions::greater::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::GREATER, l, r);
     }
     
     Expression inline less (Expression &l, Expression &r) {
-        return expressions::less::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::LESS, l, r);
     }
     
     Expression inline boolean_and (Expression &l, Expression &r) {
-        return expressions::boolean_and::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::BOOLEAN_AND, l, r);
     }
     
     Expression inline boolean_or (Expression &l, Expression &r) {
-        return expressions::boolean_or::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::BOOLEAN_OR, l, r);
     }
     
     Expression inline arrow (Expression &l, Expression &r) {
-        return expressions::arrow::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::ARROW, l, r);
     }
     
     Expression inline intuitionistic_and (Expression &l, Expression &r) {
-        return expressions::intuitionistic_and::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::INTUITIONISTIC_AND, l, r);
     }
     
     Expression inline intuitionistic_or (Expression &l, Expression &r) {
-        return expressions::intuitionistic_or::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::INTUITIONISTIC_OR, l, r);
     }
     
     Expression inline intuitionistic_implies (Expression &l, Expression &r) {
-        return expressions::intuitionistic_implies::make (l, r);
+        using namespace expressions;
+        return binary_expression::make (binary_operand::INTUITIONISTIC_IMPLIES, l, r);
     }
     
 }
 
 namespace Diophant::expressions {
     
-    template <binary_operand X>
-    Expression inline binary_expression<X>::make (Expression &l, Expression &r) {
-        return Diophant::expression {std::static_pointer_cast<const abstract> (std::make_shared<binary_expression<X>> (l, r))};
+    Expression inline binary_expression::make (binary_operand op, Expression &l, Expression &r) {
+        return Diophant::expression {std::static_pointer_cast<const abstract> (std::make_shared<binary_expression> (op, l, r))};
     }
     
-    template <binary_operand X>
-    std::ostream inline &binary_expression<X>::write (std::ostream &o) const {
+    std::ostream inline &binary_expression::write (std::ostream &o) const {
         return write_parens (
             write_parens (o, 
                 *left, 
-                left->precedence () > this->precedence ()) << " " << binary_operator<X> () << " ", 
+                left->precedence () > this->precedence ()) << " " << binary_operator (op) << " ",
             *right, 
             right->precedence () > this->precedence ());
     }
-    
-    template <binary_operand X>
-    const abstract inline *binary_expression<X>::root () const {
-        return &static_cast<const abstract &> (*symbol::make (binary_operator<X> ()));
-    }
 
-    template <binary_operand X>
-    bool inline binary_expression<X>::operator == (const abstract &a) const {
+    bool inline binary_expression::operator == (const abstract &a) const {
         try {
-            const binary_expression<X> &b = dynamic_cast<const binary_expression<X> &> (a);
-            return left == b.left && right == b.right;
+            const binary_expression &b = dynamic_cast<const binary_expression &> (a);
+            return op == b.op && left == b.left && right == b.right;
         } catch (std::bad_cast) {
             return false;
         }

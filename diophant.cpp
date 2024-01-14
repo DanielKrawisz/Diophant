@@ -27,18 +27,20 @@ int main (int args, char **arg) {
     
     try {
         while (true) {
-            maybe input = u.read ();
+            maybe<string> input = u.read ();
             if (!bool (input)) break;
             if (input->empty ()) continue;
 
+            std::cout << "reading line " << *input << std::endl;
             // for each input line, attempt to construct an expression
             // out of it and then evaluate it.
-            tao::pegtl::parse<parse::grammar, Diophant::eval_action>
-                (tao::pegtl::memory_input<> {*input, "expression"}, eval);
+            try {
+                tao::pegtl::parse<parse::grammar, Diophant::eval_action>
+                    (tao::pegtl::memory_input<> {*input, "expression"}, eval);
+            } catch (data::exception &e) {
+                std::cout << "Exception caught: " << e.what () << "!" << std::endl;
+            }
         }
-    } catch (data::exception &e) {
-        std::cout << "Exception caught: " << e.what () << "!" << std::endl;
-        return 1;
     } catch (std::exception &e) {
         std::cout << "Unknown exception caught: " << e.what () << "!" << std::endl;
         return 1;

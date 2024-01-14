@@ -5,29 +5,19 @@
 
 namespace Diophant {
     
-    struct Type;
-
-    std::partial_ordering operator <=> (const Type &, const Type &);
-    bool operator == (const Type &, const Type &);
-    
-    std::ostream &operator << (std::ostream &, Type &);
-
-    // every expression has a type. 
-    Type type (Expression &);
-
-    struct Type {
-        
-        Type () {}
-        
-        explicit Type (Expression) {}
-        
+    struct type : expression {
+        explicit type (Expression &e) : expression {e} {}
+        type () : expression {} {}
     };
 
-    std::partial_ordering inline operator <=> (const Type &, const Type &) {
+    // every expression has a type. 
+    Type type_of (Expression &);
+
+    std::partial_ordering inline operator <=> (Type &, Type &) {
         return std::partial_ordering::equivalent;
     }
     
-    bool inline operator == (const Type &, const Type &) {
+    bool inline operator == (Type &, Type &) {
         return true;
     }
     

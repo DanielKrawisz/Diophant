@@ -3,31 +3,19 @@
 
 #include <Diophant/symbol.hpp>
 #include <Diophant/expressions/expressions.hpp>
-#include <Diophant/expression.hpp>
 
 namespace Diophant::expressions {
     
     struct symbol final: abstract {
-        const std::string *name;
+        const std::string &name;
         
-        static const ptr<const symbol> &make (const std::string &);
+        static const ptr<const symbol> &make (const std::string &, symbols &);
         
         std::ostream &write (std::ostream &) const override;
-        
-        const abstract *root () const override {
-            return this;
-        }
-        
-        symbol () : name {nullptr} {}
-        
-        bool valid () const {
-            return name != nullptr;
-        }
 
         bool operator == (const abstract &) const override;
         
-    private:
-        symbol (const std::string &x) : name {&x} {}
+        symbol (const std::string &x) : name {x} {}
     };
     
     std::ostream inline &symbol::write (std::ostream &o) const {
@@ -35,21 +23,13 @@ namespace Diophant::expressions {
     }
     
     std::strong_ordering inline operator <=> (const Symbol &a, const Symbol &b) {
-        return *a.name <=> *b.name;
+        return a.name <=> b.name;
     }
     
     bool inline operator == (const Symbol &a, const Symbol &b) {
         return a.name == b.name;
     }
     
-}
-
-namespace Diophant::make {
-
-    Expression inline symbol (const std::string &x) {
-        return expressions::symbol::make (x);
-    }
-
 }
 
 namespace Diophant::expressions {
@@ -59,6 +39,10 @@ namespace Diophant::expressions {
         } catch (std::bad_cast) {
             return false;
         }
+    }
+
+    std::ostream inline &operator << (std::ostream &o, Symbol x) {
+        return o << x.name;
     }
 }
 

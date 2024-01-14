@@ -1,13 +1,13 @@
 #ifndef DIOPHANT_EXPRESSION
 #define DIOPHANT_EXPRESSION
 
-#include <Diophant/evaluate.hpp>
 #include <Diophant/expressions/expressions.hpp>
-#include <Diophant/replace.hpp>
 #include <Diophant/pattern.hpp>
+#include <Diophant/symbol.hpp>
 
 namespace Diophant {
     
+    // an expression produces a value.
     struct expression : ptr<const expressions::abstract> {
         
         using ptr<const expressions::abstract>::ptr;
@@ -21,13 +21,7 @@ namespace Diophant {
             return (*this)->precedence ();
         }
         
-        const expressions::abstract *root () const {
-            return (*this)->root ();
-        }
-        
-        operator Pattern () const;
-        
-        maybe<replacements> match (Expression &, const Machine &) const;
+        //maybe<list<entry<Symbol, Expression>>> match (Expression &, const Machine &) const;
 
         explicit operator std::string () const;
 
@@ -41,24 +35,27 @@ namespace Diophant {
     std::ostream inline &operator << (std::ostream &o, Expression &e);
     
     const expressions::abstract inline *root (Expression &e);
-    
-    struct Type;
 
 }
 
 namespace Diophant::make {
 
+    // basic values
     Expression null ();
     Expression boolean (bool b);
+    Expression natural (const data::Q &q);
+    Expression integer (const data::Q &q);
     Expression rational (const data::Q &q);
-    Expression symbol (const std::string &x);
+    Expression symbol (const std::string &x, symbols &);
     Expression string (const data::string &str);
-    Expression list (const data::list<Expression> &ls);
-    Expression object (const data::list<data::entry<data::string, Expression>> &x);
+    Expression list (data::stack<Expression> ls);
+    Expression map (data::stack<data::entry<Expression, Expression>> x);
+    Expression lambda (Symbol &, Expression &);
 
-    Expression apply (Expression &, Expression &);
+    Expression call (Expression &, Expression &);
 
     Expression negate (Expression &);
+    Expression plus (Expression &);
     Expression plus (Expression &, Expression &);
     Expression minus (Expression &, Expression &);
     Expression times (Expression &, Expression &);
@@ -76,8 +73,6 @@ namespace Diophant::make {
     Expression boolean_and (Expression &, Expression &);
     Expression boolean_or (Expression &, Expression &);
 
-    Expression arrow (Expression &, Expression &);
-
     Expression intuitionistic_and (Expression &, Expression &);
     Expression intuitionistic_or (Expression &, Expression &);
     Expression intuitionistic_implies (Expression &, Expression &);
@@ -92,18 +87,10 @@ namespace Diophant {
         return e.get () == nullptr ? o << "null" : e->write (o);
     }
 
-    const expressions::abstract inline *root (Expression &e) {
-        return e->root ();
-    }
-
     inline expression::operator std::string () const {
         std::stringstream ss;
         ss << *this;
         return ss.str ();
-    }
-
-    bool inline operator == (Expression &a, Expression &b) {
-        return a.get () == nullptr ? b.get () == nullptr : b.get () == nullptr ? false : *a == *b;
     }
 
 }

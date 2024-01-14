@@ -8,57 +8,63 @@
 #include <Diophant/expressions/unary.hpp>
 #include <Diophant/expressions/binary.hpp>
 #include <Diophant/expressions/symbol.hpp>
+#include <Diophant/expressions/lambda.hpp>
 
 namespace parse {
     using namespace tao::pegtl;
 
     struct ws : star<space> {};
 
+    // literals can be natural numbers or strings,
+
+    // natural numbers are written in hex or decimal.
     struct hex_digit : seq<xdigit, xdigit> {};
     struct hex_lit : seq<string<'0', 'x'>, star<hex_digit>> {};
     struct dec_lit : sor<one<'0'>, seq<range<'1', '9'>, star<digit>>> {};
 
     struct number_lit : sor<dec_lit, hex_lit> {};
 
+    // strings can have escaped characters with \ .
     struct string_body : star<sor<
         seq<not_at<sor<one<'\\'>, one<'"'>>>, ascii::print>,  // any ascii character other than \ and "
         seq<one<'\\'>, ascii::print>                          // \ followed by any printable character.
     >> {};
 
+    // strings are written with ""
     struct string_lit : seq<
         one<'"'>,                                             // opening "
             string_body,
         one<'"'>> {};                                         // closing "
 
+    // symbols are _ or alpha characters followed by _ and alphanumeric.
     struct symbol : seq<sor<alpha, one<'_'>>, star<sor<alnum, one<'_'>>>> {};
 
+    // parentheses are only used to group expressions
     struct open_paren : one<'('> {};
     struct close_paren : one<')'> {};
 
     struct expression;
     struct type_expression;
 
+    struct input : seq<type_expression, ws, one<';'>, ws, symbol> {};
+
     struct parenthetical : seq<open_paren, ws, 
-            expression, 
-            star<seq<ws, one<','>, ws, expression>>, ws, 
-        close_paren> {};
-        
-    struct list : seq<one<'['>, ws, 
+            expression,
+            //star<seq<ws, one<','>, ws, expression>>,
+        ws, close_paren> {};
+
+    struct list : seq<one<'['>, ws,
             opt<seq<expression, ws, opt<star<seq<one<','>, ws, expression, ws>>>>>, 
         one<']'>> {};
-    
-    struct map : seq<one<'{'>, ws, opt<
-        seq<symbol, ws, one<':'>, ws, expression, ws, opt<star<
-            seq<one<','>, ws, symbol, ws, one<':'>, expression, ws>>>>>, one<'}'>> {};
 
-    struct typed_input : seq<one<'.'>, ws, type_expression> {};
-    struct untyped_input : seq<one<';'>> {};
+    struct map : seq<one<'{'>, ws, opt<
+        seq<symbol, ws, string<'-', '>'>, ws, expression, ws, opt<star<
+            seq<one<','>, ws, symbol, ws, string<'-', '>'>, expression, ws>>>>>, one<'}'>> {};
 
     struct structure;
     struct call : seq<plus<space>, structure> {};
-    struct part : seq<one<'@'>, sor<number_lit, symbol>> {};
-    struct structure : seq<sor<number_lit, string_lit, 
-        seq<symbol, typed_input, untyped_input>, 
+    struct part : seq<one<'.'>, sor<number_lit, symbol>> {};
+    struct structure : seq<sor<number_lit, string_lit, symbol,
         parenthetical, list, map>, star<part>, star<call>> {};
 
     struct unary_operator : sor<one<'~'>, one<'+'>, one<'*'>> {};
@@ -77,7 +83,7 @@ namespace parse {
 
     struct mul_op : seq<ws, sor<one<'*'>, one<'%'>, one<'~'>>, ws, mul_expr> {};
     struct pow_op : seq<ws, one<'^'>, ws, div_expr> {};
-    struct div_op : seq<ws, one<'/'>, ws, div_expr> {};
+    struct div_op : seq<ws, sor<one<'/'>, string<'/', '%'>>, ws, div_expr> {};
     struct sub_op : seq<ws, one<'-'>, ws, sub_expr> {};
     struct add_op : seq<ws, one<'+'>, ws, add_expr> {};
 
@@ -108,8 +114,10 @@ namespace parse {
     struct bool_and_expr : seq<comp_expr, opt<bool_and_op>> {};
     struct bool_or_expr : seq<bool_and_expr, opt<bool_or_op>> {};
 
-    struct arrow_op : seq<ws, one<'-','>'>, expression> {};
-    struct expression : seq<bool_or_expr, opt<arrow_op>> {};
+    struct arrow_expr;
+    struct arrow_op : seq<ws, string<'-','>'>, ws, arrow_expr> {};
+
+    struct arrow_expr : seq<bool_or_expr, opt<arrow_op>> {};
 
     struct intuitionistic_and_expr;
     struct intuitionistic_or_expr;
@@ -119,15 +127,17 @@ namespace parse {
     struct intuitionistic_or_op : seq<ws, one<'|'>, ws, intuitionistic_or_expr> {};
     struct intuitionistic_implies_op : seq<ws, string<'=','>'>, ws, expression> {};
 
-    struct intuitionistic_and_expr : seq<expression, opt<intuitionistic_and_op>> {};
+    struct intuitionistic_and_expr : seq<arrow_expr, opt<intuitionistic_and_op>> {};
     struct intuitionistic_or_expr : seq<intuitionistic_and_expr, opt<intuitionistic_or_op>> {};
     struct type_expression : seq<intuitionistic_or_expr, opt<intuitionistic_implies_op>> {};
-    
+
+    struct expression : seq<type_expression, opt<ws, one<':'>, symbol>> {};
+
     struct set : seq<one<'='>, ws, expression> {};
     struct infer : seq<string<':', '='>, ws, expression> {};
-    struct declare : seq<one<':'>, ws, expression, opt<set>> {};
+    struct declare : seq<one<':'>, ws, type_expression, opt<set>> {};
 
-    struct statement : seq<expression, opt<ws, sor<infer, set, declare>>> {};
+    struct statement : seq<arrow_expr, opt<ws, sor<infer, set, declare>>> {};
 
     struct grammar : seq<statement, ws> {};
 }
@@ -144,8 +154,19 @@ namespace Diophant {
     namespace pegtl = tao::pegtl;
 
     struct Parser {
+        // set of registered symbols.
+        symbols registered {};
+
+        // new symbols that are found within a command as it is being executed.
+        // added to registered symbols if the command is read successfully.
+        symbols new_symbols {};
+
         Machine machine {};
+
         data::stack<Expression> stack {};
+
+        data::stack<data::stack<Expression>> back {};
+
         User &user;
 
         Parser (User &u) : user {u} {}
@@ -158,9 +179,8 @@ namespace Diophant {
         void open_object ();
         void close_list ();
         void close_object ();
-        void comma ();
 
-        void apply ();
+        void call ();
 
         void negate ();
         void mul ();
@@ -195,197 +215,202 @@ namespace Diophant {
 
     template <> struct eval_action<parse::number_lit> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.read_number (in.string ());
         }
     };
 
     template <> struct eval_action<parse::string_body> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.read_string (in.string ());
         }
     };
 
     template <> struct eval_action<parse::symbol> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.read_symbol (in.string ());
+        }
+    };
+
+    template <> struct eval_action<parse::call> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.call ();
         }
     };
 
     template <> struct eval_action<parse::negate_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.negate ();
         }
     };
 
     template <> struct eval_action<parse::bool_not_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.boolean_not ();
         }
     };
 
     template <> struct eval_action<parse::mul_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.mul ();
         }
     };
 
     template <> struct eval_action<parse::pow_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.pow ();
         }
     };
 
     template <> struct eval_action<parse::div_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.div ();
         }
     };
 
     template <> struct eval_action<parse::add_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.plus ();
         }
     };
 
     template <> struct eval_action<parse::sub_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.minus ();
         }
     };
 
     template <> struct eval_action<parse::equal_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.equal ();
         }
     };
 
     template <> struct eval_action<parse::unequal_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.unequal ();
         }
     };
 
     template <> struct eval_action<parse::greater_equal_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.greater_equal ();
         }
     };
 
     template <> struct eval_action<parse::less_equal_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.less_equal ();
         }
     };
 
     template <> struct eval_action<parse::less_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.less ();
         }
     };
 
     template <> struct eval_action<parse::greater_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.greater ();
         }
     };
 
     template <> struct eval_action<parse::bool_and_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.boolean_and ();
         }
     };
 
     template <> struct eval_action<parse::bool_or_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.boolean_or ();
         }
     };
 
     template <> struct eval_action<parse::arrow_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.arrow ();
         }
     };
 
     template <> struct eval_action<parse::intuitionistic_and_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.intuitionistic_and ();
         }
     };
 
     template <> struct eval_action<parse::intuitionistic_or_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.intuitionistic_or ();
         }
     };
 
     template <> struct eval_action<parse::intuitionistic_implies_op> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.intuitionistic_implies ();
-        }
-    };
-
-    template <> struct eval_action<parse::expression> {
-        template <typename Input>
-        static void apply (const Input& in, Parser &eval) {}
-    };
-
-    template <> struct eval_action<parse::set> {
-        template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
-            eval.set ();
         }
     };
 
     template <> struct eval_action<parse::declare> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.declare ();
+        }
+    };
+
+    template <> struct eval_action<parse::set> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.set ();
         }
     };
 
     template <> struct eval_action<parse::infer> {
         template <typename Input>
-        static void apply (const Input& in, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
             eval.infer ();
         }
     };
 
     template <> struct eval_action<parse::statement> {
         template <typename Input>
-        static void apply (const Input&, Parser &eval) {
+        static void apply (const Input &in, Parser &eval) {
+            std::cout << "read statement " << in.string () << "; stack size = " << data::size (eval.stack) << std::endl;
             if (data::size (eval.stack) == 1) {
+                std::cout << "evaluate "<< eval.stack.first () << std::endl;
                 auto v = evaluate (eval.stack.first (), eval.machine);
                 eval.user.write (std::string (v));
                 eval.stack = data::stack<Expression> {};
+                eval.registered = eval.new_symbols;
             }
         }
     };
     
     void inline Parser::read_symbol (const data::string &in) {
-        stack <<= make::symbol (in);
+        stack <<= make::symbol (in, new_symbols);
     }
 
     void inline Parser::read_string (const data::string &in) {
@@ -393,11 +418,7 @@ namespace Diophant {
     }
 
     void inline Parser::read_number (const data::string &in) {
-        stack <<= make::rational (Q {Z {in}});;
-    }
-
-    void inline Parser::apply () {
-        stack = prepend (rest (rest (stack)), make::apply (first (rest (stack)), first (stack)));
+        stack <<= make::natural (N {in});
     }
 
     void inline Parser::negate () {
@@ -460,10 +481,6 @@ namespace Diophant {
         stack = prepend (rest (rest (stack)), make::boolean_or (first (rest (stack)), first (stack)));
     }
 
-    void inline Parser::arrow () {
-        stack = prepend (rest (rest (stack)), make::arrow (first (rest (stack)), first (stack)));
-    }
-
     void inline Parser::intuitionistic_and () {
         stack = prepend (rest (rest (stack)), make::intuitionistic_and (first (rest (stack)), first (stack)));
     }
@@ -474,6 +491,10 @@ namespace Diophant {
 
     void inline Parser::intuitionistic_implies () {
         stack = prepend (rest (rest (stack)), make::intuitionistic_implies (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::call () {
+        stack = prepend (rest (rest (stack)), make::call (first (rest (stack)), first (stack)));
     }
 }
 

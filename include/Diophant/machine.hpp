@@ -8,31 +8,42 @@
 #include <Diophant/expressions/pattern.hpp>
 
 namespace Diophant {
-    struct pattern {
+
+    struct parameters : cross<pattern> {};
+    std::partial_ordering operator <=> (const parameters &, const parameters &);
+
+    maybe<replacements> match (const parameters &, stack<Expression>);
+
+    struct subject {
         Symbol root;
-        stack<Expression> parameters;
+        Diophant::parameters parameters;
 
-        pattern () : root {}, parameters {} {}
-        pattern (Symbol &x) : root {x}, parameters {} {}
-        pattern (Symbol &x, stack<Expression> p) : root {x}, parameters {p} {}
+        subject (Symbol &x) : root {x}, parameters {} {}
+        subject (Symbol &x, const cross<pattern> &p) : root {x}, parameters {p} {}
 
-        bool valid () const {
-            return root.valid () && parameters.valid ();
-        }
+        static subject read (Expression &);
     };
 
-    Symbol inline &root (Pattern &p) {
-        return p.root;
-    }
+    struct predicate {
+        Diophant::type type;
+        maybe<expression> expr;
+
+        predicate (Type);
+        predicate (Expression);
+        predicate (Type, Expression);
+    };
+
+    bool operator == (const predicate &, const predicate &);
+    std::ostream &operator << (std::ostream &, const subject &);
+    std::ostream &operator << (std::ostream &, const predicate &);
 
     struct Machine {
-        Expression evaluate (Expression &);
-        
-        void declare (Pattern, Type);
-        void define (Pattern, Expression);
-        void define (Pattern, Type, Expression);
-        
-        maybe<replacements> match (Pattern &, Expression &) const;
+        Expression evaluate (Expression &, data::set<expressions::symbol> fixed);
+
+        void declare (const subject &, Type);
+        void define (const subject &, const predicate &);
+
+        maybe<replacements> match (parameters &, Expression &) const;
         
         // every cast is valid for now. 
         bool cast (const Type &, const Expression &) const {
@@ -40,35 +51,14 @@ namespace Diophant {
         }
         
         Machine ();
-        
-    private:
-        struct Transformation {
-            Type type;
-            expression expr;
-            
-            Transformation (Type);
-            Transformation (Expression);
-            Transformation (Type, Expression);
-            
-            bool operator == (const Transformation &) const;
-        };
-        
-        map<Symbol, map<Pattern, Transformation>> definitions;
-        
-        map<Pattern, Transformation> operator [] (Symbol &x) const;
-    };
+        using overloads = stack<entry<parameters, predicate>>;
 
-    Expression inline evaluate (Expression &x, Machine &m) {
-        return m.evaluate (x);
-    }
+        map<Symbol, overloads> definitions;
+    };
     
-    inline Machine::Transformation::Transformation (Type t) : type {t}, expr {} {}
-    inline Machine::Transformation::Transformation (Expression e) : type {}, expr {e} {}
-    inline Machine::Transformation::Transformation (Type t, Expression e) : type {t}, expr {e} {}
-            
-    bool inline Machine::Transformation::operator == (const Transformation &t) const {
-        return type == t.type && expr == t.expr;
-    }
+    inline predicate::predicate (Type t) : type {t}, expr {} {}
+    inline predicate::predicate (Expression e) : type {}, expr {e} {}
+    inline predicate::predicate (Type t, Expression e) : type {t}, expr {e} {}
 
     bool inline operator == (Pattern &, Pattern &) {
         throw method::unimplemented {"pattern == "};
@@ -82,8 +72,12 @@ namespace Diophant {
         throw method::unimplemented {"pattern << "};
     }
 
-    Expression inline replace (Expression, replacements) {
-        throw method::unimplemented {"replace"};
+    bool inline operator == (const predicate &tr, const predicate & tl) {
+        return tl.type == tr.type && tl.expr == tr.expr;
+    }
+
+    std::ostream inline &operator << (std::ostream &o, const subject &z) {
+        return o << z.root << " " << z.parameters;
     }
 
 }

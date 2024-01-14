@@ -3,8 +3,7 @@
 
 namespace Diophant::expressions {
     
-    const ptr<const symbol> &symbol::make (const std::string &x) {
-        static std::map<std::string, ptr<const symbol>> Symbols;
+    const ptr<const symbol> &symbol::make (const std::string &x, std::map<std::string, ptr<const symbol>> &Symbols) {
         
         auto v = Symbols.find (x);
         

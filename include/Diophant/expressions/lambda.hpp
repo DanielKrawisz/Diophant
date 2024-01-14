@@ -3,26 +3,56 @@
 
 #include <Diophant/expressions/expressions.hpp>
 #include <Diophant/expression.hpp>
-#include <Diophant/lambda.hpp>
+
+namespace Diophant {
+    bool pattern_equal (Expression &a, Expression &b, list<std::pair<Symbol, Symbol>>);
+}
 
 namespace Diophant::expressions {
     
     struct lambda final : abstract {
-        Diophant::symbol Argument;
-        expression Body;
-        bool operator==(const abstract &) const final override;
-        lambda(Symbol a, Expression b): Argument{a}, Body{b} {}
+        Symbol argument;
+        Expression body;
+        bool operator == (const abstract &) const final override;
+        lambda (Symbol a, Expression b): argument {a}, body {b} {}
+        Expression operator () (Expression) const;
+        std::ostream &write (std::ostream &) const override;
     };
+
+    std::istream &operator >> (std::istream &i, lambda &l);
+    
+    Expression inline lambda::operator () (Expression x) const {
+        return replace (body, {{argument, x}});
+    }
+
+    bool inline lambda::operator == (const abstract &x) const {
+        try {
+            auto z = dynamic_cast<const lambda &> (x);
+            return pattern_equal (this->body, z.body, {{argument, z.argument}});
+        } catch (std::bad_cast) {
+            return false;
+        }
+    }
+
+    std::ostream inline &lambda::write (std::ostream &o) const {
+        return o << argument << " -> " << body;
+    }
+    
+}
+
+namespace Diophant::make {
+
+    Expression inline lambda (Symbol &arg, Expression &body) {
+        return Diophant::expression
+            {std::static_pointer_cast<const expressions::abstract> (std::make_shared<expressions::lambda> (arg, body))};
+    }
+
 }
 
 namespace Diophant {
-    
-    Lambda inline lambda::operator()(Lambda x) const {
-        return lambda(replace(_.get()->Body, _->Argument, x));
+    bool inline pattern_equal (Expression &a, Expression &b, list<std::pair<Symbol, Symbol>>) {
+        throw method::unimplemented {"pattern_equal"};
     }
-    
-    std::istream &operator>>(std::istream &i, lambda &l);
-    
 }
 
 #endif

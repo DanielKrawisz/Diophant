@@ -2,28 +2,25 @@
 #define DIOPHANT_EXPRESSIONS_PATTERN
 
 #include <Diophant/expressions/expressions.hpp>
+#include <Diophant/type.hpp>
 
 namespace Diophant::expressions {
     
-    struct pattern final: abstract {
+    struct typed final: abstract {
         symbol var;
         Type type;
         
         static const ptr<const symbol> &make (const std::string &);
         
         std::ostream &write (std::ostream &) const override {
-            throw method::unimplemented {"pattern write"};
+            throw method::unimplemented {"typed write"};
         }
         
-        pattern (const symbol &x) : var {x}, type {} {}
-        pattern (const symbol &x, const Type &t) : var {x}, type {t} {}
+        typed (const symbol &x) : var {x}, type {} {}
+        typed (const symbol &x, const Type &t) : var {x}, type {t} {}
 
         bool operator == (const abstract &) const override {
-            throw method::unimplemented {"pattern =="};
-        }
-        
-        maybe<replacements> match (Expression &e, const Machine &m) const {
-            throw method::unimplemented {"pattern =="};
+            throw method::unimplemented {"typed =="};
         }
         
     };
@@ -31,8 +28,8 @@ namespace Diophant::expressions {
 }
 
 namespace Diophant::make {
-    Expression inline pattern (Symbol &x, const Type &t) {
-        return expression {std::static_pointer_cast<const expressions::abstract> (std::make_shared<const expressions::pattern> (x, t))};
+    Expression inline typed (const Type &t, Symbol &x) {
+        return expression {std::static_pointer_cast<const expressions::abstract> (std::make_shared<const expressions::typed> (x, t))};
     }
 }
 /*

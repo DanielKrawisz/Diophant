@@ -13,68 +13,62 @@ namespace Diophant::expressions {
         PLUS
     };
     
-    template <unary_operand X>
-    constexpr const char *unary_operator () {
+    constexpr const char *unary_operator (unary_operand X) {
         switch (X) {
             case unary_operand::NOT : return "!";
             case unary_operand::NEGATE : return "-";
             case unary_operand::PLUS : return "+";
+            default: throw exception {} << "can't get here";
         }
     }
     
-    template <unary_operand X>
     struct unary_expression final : abstract {
         
         uint32 precedence () const override {
             return 200;
         }
         
+        unary_operand op;
         Expression expression;
-        unary_expression (Expression &x) : expression {x} {}
+        unary_expression (unary_operand o, Expression &x) : op {o}, expression {x} {}
         
-        static Expression make (Expression &);
+        static Expression make (unary_operand o, Expression &);
         
         std::ostream &write (std::ostream &) const override;
-        
-        const abstract *root () const override {
-            return &static_cast<const abstract &> (*symbol::make (unary_operator<X> ()));
-        }
 
         bool operator == (const abstract &) const override;
     };
-    
-    using boolean_not = unary_expression<unary_operand::NOT>;
-    using negate = unary_expression<unary_operand::NEGATE>;
 }
 
 namespace Diophant::make {
     
     Expression inline boolean_not (Expression &x) {
-        return expressions::boolean_not::make (x);
+        return expressions::unary_expression::make (expressions::unary_operand::NOT, x);
     }
     
     Expression inline negate (Expression &x) {
-        return expressions::negate::make (x);
+        return expressions::unary_expression::make (expressions::unary_operand::NEGATE, x);
+    }
+
+    Expression inline plus (Expression &x) {
+        return expressions::unary_expression::make (expressions::unary_operand::PLUS, x);
     }
     
 }
 
 namespace Diophant::expressions {
     
-    template <unary_operand X>
-    Expression inline unary_expression<X>::make (Expression &x) {
-        return Diophant::expression {std::static_pointer_cast<const abstract> (std::make_shared<unary_expression<X>> (x))};
+    Expression inline unary_expression::make (unary_operand op, Expression &x) {
+        return Diophant::expression {std::static_pointer_cast<const abstract> (std::make_shared<unary_expression> (op, x))};
     }
     
-    template <unary_operand X>
-    std::ostream inline &unary_expression<X>::write (std::ostream &o) const {
-        return expression->write (o << unary_operator<X> () << " ");
+    std::ostream inline &unary_expression::write (std::ostream &o) const {
+        return expression->write (o << unary_operator (op) << " ");
     }
 
-    template <unary_operand X>
-    bool inline unary_expression<X>::operator == (const abstract &a) const {
+    bool inline unary_expression::operator == (const abstract &a) const {
         try {
-            return expression == dynamic_cast<const unary_expression<X> &> (a).expression;
+            return expression == dynamic_cast<const unary_expression &> (a).expression;
         } catch (std::bad_cast) {
             return false;
         }

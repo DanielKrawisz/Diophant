@@ -10,6 +10,20 @@ namespace Diophant {
 
     struct expression;
     using Expression = const expression;
+
+    bool operator == (Expression &, Expression &);
+
+    std::ostream &operator << (std::ostream &, Expression &);
+    std::istream &operator >> (std::istream &, expression &);
+
+    struct type;
+    using Type = const type;
+
+    std::partial_ordering operator <=> (Type &, Type &);
+    bool operator == (Type &, Type &);
+
+    std::ostream &operator << (std::ostream &, Type &);
+
 }
 
 #endif

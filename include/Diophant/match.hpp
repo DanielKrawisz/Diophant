@@ -6,7 +6,9 @@
 
 namespace Diophant {
 
-    maybe<replacements> match (Pattern, Expression);
+    maybe<replacements> match (Pattern &, Expression &, data::set<expressions::symbol> fixed = {});
+
+    maybe<replacements> combine (maybe<replacements>, maybe<replacements>);
 
 }
 

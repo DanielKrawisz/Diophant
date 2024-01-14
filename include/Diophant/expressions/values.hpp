@@ -18,18 +18,28 @@ namespace Diophant::expressions {
         bool operator == (const abstract &) const override;
         
     };
-    
+
     using boolean = value<bool>;
+    using natural = value<data::N>;
+    using integer = value<data::Z>;
     using rational = value<data::Q>;
-    using list = value<data::stack<Expression>>;
-    using object = value<data::stack<entry<data::string, Expression>>>;
     using string = value<data::string>;
+    using list = value<data::cross<expression>>;
+    using map = value<data::map<Expression, Expression>>;
 }
 
 namespace Diophant::make {
     
     Expression inline boolean (bool b) {
         return expressions::boolean::make (b);
+    }
+
+    Expression inline natural (const data::N &n) {
+        return expressions::natural::make (n);
+    }
+
+    Expression inline integer (const data::Z &n) {
+        return expressions::integer::make (n);
     }
     
     Expression inline rational (const data::Q &n) {
@@ -41,11 +51,13 @@ namespace Diophant::make {
     }
     
     Expression inline list (data::stack<Expression> z) {
-        return expressions::list::make (z);
+        return expressions::list::make (cross<expression> (data::reverse (z)));
     };
     
-    Expression inline object (data::stack<entry<data::string, Expression>> z) {
-        return expressions::object::make (z);
+    Expression inline map (data::stack<entry<Expression, Expression>> z) {
+        data::map<Expression, Expression> m;
+        for (const auto &e : z) m = m.insert (e);
+        return expressions::map::make (m);
     };
     
 }
@@ -67,9 +79,26 @@ namespace Diophant::expressions {
     std::ostream inline &write (std::ostream &o, const data::string &x) {
         return o << x;
     }
+
+    template <typename X>
+    std::ostream inline &write_iterable (std::ostream &o, const X &x) {
+        auto i = x.begin ();
+        if (i == x.end ()) return o;
+        o << *i;
+        while (true) {
+            i++;
+            if (i == x.end ()) return o;
+            o << ", " << *i;
+        }
+    }
     
-    std::ostream &write (std::ostream &o, data::stack<Expression>);
-    std::ostream &write (std::ostream &o, data::stack<entry<data::string, Expression>>);
+    std::ostream inline &write (std::ostream &o, const data::cross<expression> &x) {
+        return write_iterable (o << "[", x) << "]";
+    }
+
+    std::ostream inline &write (std::ostream &o, data::map<Expression, Expression> x) {
+        return write_iterable (o << "{", x) << "}";
+    }
 
     template <typename X>
     std::ostream inline &value<X>::write (std::ostream &o) const {
