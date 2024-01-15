@@ -45,8 +45,8 @@ namespace Diophant::make {
     // basic values
     Expression null ();
     Expression boolean (bool b);
-    Expression natural (const data::Q &q);
-    Expression integer (const data::Q &q);
+    Expression natural (const data::N &q);
+    Expression integer (const data::Z &q);
     Expression rational (const data::Q &q);
     Expression symbol (const std::string &x, symbols &);
     Expression string (const data::string &str);

@@ -31,12 +31,10 @@ int main (int args, char **arg) {
             if (!bool (input)) break;
             if (input->empty ()) continue;
 
-            std::cout << "reading line " << *input << std::endl;
             // for each input line, attempt to construct an expression
             // out of it and then evaluate it.
             try {
-                tao::pegtl::parse<parse::grammar, Diophant::eval_action>
-                    (tao::pegtl::memory_input<> {*input, "expression"}, eval);
+                eval.read_line (*input);
             } catch (data::exception &e) {
                 std::cout << "Exception caught: " << e.what () << "!" << std::endl;
             }

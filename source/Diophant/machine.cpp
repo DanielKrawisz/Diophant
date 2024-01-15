@@ -41,7 +41,11 @@ namespace Diophant {
 
     std::ostream &operator << (std::ostream &o, const predicate &p) {
         o << ": " << p.type;
-        if (p.expr) o << " = " << *p.expr;
+        if (p.function) {
+            o << " = ";
+            if (auto pu = dynamic_cast<const user_defined *> (p.function.get ()); bool (pu)) o << pu->expr;
+            else o << "<(built-in function)>";
+        }
         return o;
     }
 
@@ -59,12 +63,12 @@ namespace Diophant {
 
     // return the conflicting entry if there is one.
     // will not modify the overloads if there is a conflict.
-    const entry<parameters, predicate> *insert (Machine::overloads &o, const entry<parameters, predicate> &e) {
-        stack<entry<parameters, predicate> &> left;
+    const transformation *insert (Machine::overloads &o, const transformation &e) {
+        stack<transformation &> left;
         Machine::overloads right = o;
 
         while (data::size (right) > 0) {
-            entry<parameters, predicate> &next = right.first ();
+            transformation &next = right.first ();
 
             // the key will be greater than the next key if it is a
             // bigger pattern or if it is more general than next.
@@ -80,15 +84,20 @@ namespace Diophant {
             if (e.Key == next.Key) {
                 if (e.Value.type > next.Value.type) return &next;
 
-                if (!bool (e.Value.expr)) {
+                if (!bool (e.Value.function)) {
                     // next = entry<Pattern, predicate> {e.Key, predicate {e.Value.type, next.Value.expr}};
                     next.Value.type = e.Value.type;
                     return nullptr;
                 }
 
-                if (!bool (next.Value.expr) || (bool (next.Value.expr) && *next.Value.expr == *e.Value.expr)) {
+                if (!bool (next.Value.function)) {
                     next.Value = e.Value;
                     return nullptr;
+                } else {
+                    auto el = dynamic_cast<const user_defined *> (next.Value.function.get ());
+                    auto er = dynamic_cast<const user_defined *> (e.Value.function.get ());
+                    // TODO need to take into account the fact that these could have different varibles.
+                    if (el->expr == er->expr) return nullptr;
                 }
 
                 return &next;
@@ -136,10 +145,10 @@ namespace Diophant {
         return {};
     }
 
-    maybe<Expression> match_and_replace (const Machine::overloads &o, stack<Expression> x) {
+    maybe<Expression> match_and_call (const Machine::overloads &o, stack<Expression> x) {
         auto w = machine_match (o, x);
-        if (!w || !w->predicate.expr) return {};
-        return replace (*w->predicate.expr, w->replacements);
+        if (!w || !w->predicate.function) return {};
+        return w->predicate.function->call (w->replacements);
     }
 
     subject subject::read (Expression &x) {
@@ -258,7 +267,7 @@ namespace Diophant {
             if (fixed.contains (*px)) return x;
             auto v = this->definitions.contains (*px);
             if (!v) return x;
-            auto w = match_and_replace (*v, {});
+            auto w = match_and_call (*v, {});
             if (!bool (w)) return x;
             return *w;
         }
@@ -269,7 +278,7 @@ namespace Diophant {
             expression arg = Diophant::evaluate (pc->argument, *this, fixed);
             auto f = fun.get ();
 
-            // check function for lambda
+            // check for lambda
             if (auto fl = dynamic_cast<const expressions::lambda *> (f); fl != nullptr)
                 return Diophant::evaluate (replace (fl->body, {{fl->argument, arg}}), *this, fixed);
 
@@ -286,7 +295,7 @@ namespace Diophant {
                 // check for call
                 if (auto fc = dynamic_cast<const expressions::call *> (f); fc != nullptr) {
                     f = fc->function.get ();
-                    args <<= fc->argument;
+                    args <<= Diophant::evaluate (fc->argument, *this, fixed);
                     continue;
                 }
 
@@ -298,7 +307,7 @@ namespace Diophant {
             {
                 auto v = this->definitions.contains (*q);
                 if (!v) goto end_call;
-                auto w = match_and_replace (*v, args);
+                auto w = match_and_call (*v, args);
                 if (!bool (w)) goto end_call;
                 return *w;
             }
@@ -314,7 +323,9 @@ namespace Diophant {
         //
         auto v = definitions.contains (z.root);
         if (!v) {
-            definitions = definitions.insert (z.root, overloads {} << entry<parameters, predicate> {z.parameters, predicate {t}});
+            overloads o {{transformation {z.parameters, predicate {t}}}};
+            auto d = definitions.insert (z.root, o);
+            definitions = d;
             return;
         }
 
@@ -325,7 +336,6 @@ namespace Diophant {
     }
 
     void Machine::define (const subject &z, const predicate &p) {
-        std::cout << " defining " << z << p << std::endl;
 
         auto v = definitions.contains (z.root);
         if (!v) {
@@ -336,6 +346,16 @@ namespace Diophant {
         auto w = insert (*v, {z.parameters, p});
         if (!w) return;
         throw exception {} << "conflicting definition " << subject {z.root, w->Key} << w->Value;
+    }
+
+    std::ostream &operator << (std::ostream &o, const Machine &m) {
+        o << "Machine \n{";
+        for (const auto &e : m.definitions) {
+            o << "\n    " << e.Key;
+            for (const auto &x : e.Value)
+                o << "\n        " << x.Key << x.Value;
+        }
+        return o << "\n}";
     }
 
 }

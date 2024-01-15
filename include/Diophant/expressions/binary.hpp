@@ -34,7 +34,7 @@ namespace Diophant::expressions {
         switch (X) {
             case binary_operand::PLUS : return "+";
             case binary_operand::MINUS : return "-";
-            case binary_operand::TIMES : return "-";
+            case binary_operand::TIMES : return "*";
             case binary_operand::POWER : return "^";
             case binary_operand::DIVIDE : return "/";
             case binary_operand::EQUAL : return "==";

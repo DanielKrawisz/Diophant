@@ -10,6 +10,7 @@
 namespace Diophant {
 
     struct parameters : cross<pattern> {};
+    std::ostream &operator << (std::ostream &, const parameters &);
     std::partial_ordering operator <=> (const parameters &, const parameters &);
 
     maybe<replacements> match (const parameters &, stack<Expression>);
@@ -27,16 +28,27 @@ namespace Diophant {
 
     struct predicate {
         Diophant::type type;
-        maybe<expression> expr;
+        ptr<Diophant::function> function;
 
         predicate (Type);
-        predicate (Expression);
-        predicate (Type, Expression);
+        predicate (ptr<Diophant::function>);
+        predicate (Type, ptr<Diophant::function>);
+
+        // dummy function so that we can use maps.
+        bool operator == (const predicate &) {
+            return true;
+        }
     };
 
-    bool operator == (const predicate &, const predicate &);
     std::ostream &operator << (std::ostream &, const subject &);
     std::ostream &operator << (std::ostream &, const predicate &);
+
+    struct transformation {
+        Diophant::parameters Key;
+        Diophant::predicate Value;
+    };
+
+    //std::partial_ordering operator <=> (const transformation &a, const transformation &b);
 
     struct Machine {
         Expression evaluate (Expression &, data::set<expressions::symbol> fixed);
@@ -52,14 +64,20 @@ namespace Diophant {
         }
         
         Machine ();
-        using overloads = stack<entry<parameters, predicate>>;
+        using overloads = stack<transformation>;
 
         map<Symbol, overloads> definitions;
     };
+
+    std::ostream &operator << (std::ostream &, const Machine &);
     
-    inline predicate::predicate (Type t) : type {t}, expr {} {}
-    inline predicate::predicate (Expression e) : type {}, expr {e} {}
-    inline predicate::predicate (Type t, Expression e) : type {t}, expr {e} {}
+    inline predicate::predicate (Type t) : type {t}, function {} {}
+    inline predicate::predicate (ptr<Diophant::function> e) : type {}, function {e} {}
+    inline predicate::predicate (Type t, ptr<Diophant::function> e) : type {t}, function {e} {}
+/*
+    std::partial_ordering inline operator <=> (const transformation &a, const transformation &b) {
+        return a.Key <=> b.Key;
+    }*/
 
     bool inline operator == (Pattern &, Pattern &) {
         throw method::unimplemented {"pattern == "};
@@ -73,14 +91,13 @@ namespace Diophant {
         throw method::unimplemented {"pattern << "};
     }
 
-    bool inline operator == (const predicate &tr, const predicate & tl) {
-        return tl.type == tr.type && tl.expr == tr.expr;
+    std::ostream inline &operator << (std::ostream &o, const parameters &p) {
+        for (const auto &e : p) e.write (o << " ", call_precedence);
+        return o;
     }
 
     std::ostream inline &operator << (std::ostream &o, const subject &z) {
-        o << z.root;
-        for (const auto &e : z.parameters) e.write (o << " ", call_precedence);
-        return o;
+        return o << z.root << z.parameters;
     }
 
 }
