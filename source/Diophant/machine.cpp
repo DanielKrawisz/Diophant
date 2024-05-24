@@ -8,6 +8,7 @@
 #include <Diophant/expressions/unary.hpp>
 #include <Diophant/expressions/values.hpp>
 #include <Diophant/expressions/lambda.hpp>
+#include <data/io/unimplemented.hpp>
 
 namespace Diophant {
 
@@ -356,6 +357,18 @@ namespace Diophant {
                 o << "\n        " << x.Key << x.Value;
         }
         return o << "\n}";
+    }
+
+    bool operator == (Pattern &, Pattern &) {
+        throw method::unimplemented {"pattern == "};
+    }
+
+    std::partial_ordering operator <=> (const Pattern &, const Pattern &) {
+        throw method::unimplemented {"pattern <=> "};
+    }
+
+    std::ostream &operator << (std::ostream &, Pattern &) {
+        throw method::unimplemented {"pattern << "};
     }
 
 }

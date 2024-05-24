@@ -3,6 +3,7 @@
 
 #include <Diophant/expressions/expressions.hpp>
 #include <Diophant/type.hpp>
+#include <Diophant/expressions/symbol.hpp>
 
 namespace Diophant::expressions {
     
@@ -12,16 +13,15 @@ namespace Diophant::expressions {
         
         static const ptr<const symbol> &make (const std::string &);
         
-        std::ostream &write (std::ostream &) const override {
-            throw method::unimplemented {"typed write"};
+        std::ostream &write (std::ostream &o) const override {
+            // subject to change
+            return o << var << ":" << type;
         }
         
         typed (const symbol &x) : var {x}, type {} {}
         typed (const symbol &x, const Type &t) : var {x}, type {t} {}
 
-        bool operator == (const abstract &) const override {
-            throw method::unimplemented {"typed =="};
-        }
+        bool operator == (const abstract &) const override;
         
     };
     

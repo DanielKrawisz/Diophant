@@ -3,8 +3,8 @@
 #include <Diophant/pattern.hpp>
 
 namespace Diophant::expressions {
-    
-    apply::operator Pattern () const {
+    /*
+    call::operator Pattern () const {
         auto x = std::dynamic_pointer_cast<const symbol> (function); 
         if (x.get () != nullptr) return pattern {*symbol, argument};
         
@@ -15,7 +15,7 @@ namespace Diophant::expressions {
         };
         
         return pattern {};
-    }
+    }*/
     
 }
 

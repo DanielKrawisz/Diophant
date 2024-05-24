@@ -2,7 +2,6 @@
 #define DIOPHANT_EXPRESSIONS_VALUES
 
 #include <Diophant/replace.hpp>
-#include <Diophant/expressions/expressions.hpp>
 #include <Diophant/expression.hpp>
 
 namespace Diophant::expressions {
@@ -77,6 +76,10 @@ namespace Diophant::expressions {
     }
     
     std::ostream inline &write (std::ostream &o, const data::string &x) {
+        return o << x;
+    }
+    
+    std::ostream inline &write (std::ostream &o, const data::N &x) {
         return o << x;
     }
 

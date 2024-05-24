@@ -137,7 +137,7 @@ namespace parse {
 
     struct statement : seq<arrow_expr, opt<ws, sor<infer, set, declare>>> {};
 
-    struct grammar : seq<statement, ws> {};
+    struct program : seq<statement, opt<seq<ws, one<';'>, statement>>, eof> {};
 }
 
 namespace Diophant {
@@ -332,7 +332,7 @@ namespace Diophant {
         static void apply (const Input &in, Parser &eval) {
             if (data::size (eval.stack) == 1) {
                 auto v = evaluate (eval.stack.first (), eval.machine);
-                eval.user.write (std::string (v));
+                eval.user.write (v);
                 eval.stack = data::stack<Expression> {};
                 eval.registered = eval.new_symbols;
             }
@@ -340,7 +340,7 @@ namespace Diophant {
     };
 
     void Parser::read_line (const std::string &in) {
-        tao::pegtl::parse<parse::grammar, Diophant::eval_action> (tao::pegtl::memory_input<> {in, "expression"}, *this);
+        tao::pegtl::parse<parse::program, Diophant::eval_action> (tao::pegtl::memory_input<> {in, "expression"}, *this);
     }
 
     void Parser::initialize () {

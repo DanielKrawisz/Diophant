@@ -3,6 +3,8 @@
 
 #include <Diophant/expressions/expressions.hpp>
 #include <Diophant/expression.hpp>
+#include <Diophant/expressions/symbol.hpp>
+#include <Diophant/replace.hpp>
 
 namespace Diophant {
     bool pattern_equal (Expression &a, Expression &b, list<std::pair<Symbol, Symbol>>);
@@ -47,12 +49,6 @@ namespace Diophant::make {
             {std::static_pointer_cast<const expressions::abstract> (std::make_shared<expressions::lambda> (arg, body))};
     }
 
-}
-
-namespace Diophant {
-    bool inline pattern_equal (Expression &a, Expression &b, list<std::pair<Symbol, Symbol>>) {
-        throw method::unimplemented {"pattern_equal"};
-    }
 }
 
 #endif

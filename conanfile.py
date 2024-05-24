@@ -16,7 +16,7 @@ class DiophantConan(ConanFile):
     requires = [
         "boost/1.80.0",
         "gmp/6.2.1",
-        "data/v0.0.26@proofofwork/stable",
+        "data/v0.0.27@proofofwork/stable",
         "gtest/1.12.1"]
     
     def set_version (self):

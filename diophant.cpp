@@ -11,8 +11,8 @@ struct Console : User {
         return {input};
     }
 
-    void write (const std::string &x) override {
-        std::cout << "\n result: " << x << std::endl;
+    void write (Expression &x) override {
+        std::cout << "\n result: " << std::string (x) << std::endl;
     }
 };
 

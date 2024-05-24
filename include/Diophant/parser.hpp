@@ -3,14 +3,14 @@
 
 #include <Diophant/machine.hpp>
 
-
 namespace Diophant {
 
+    // this is a bad design
     struct User {
         // Read a line of user input.
         virtual maybe<std::string> read () = 0;
         // write a result to the user.
-        virtual void write (const std::string &) = 0;
+        virtual void write (Expression &) = 0;
     };
 
     struct Parser {

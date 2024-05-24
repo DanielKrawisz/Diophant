@@ -20,16 +20,7 @@ find_package (pegtl CONFIG REQUIRED)
 
 ## Check if GTests is installed. If not, install it
 
-# option(PACKAGE_TESTS "Build the tests" ON)
-
-## Enable testing
-
-# if(PACKAGE_TESTS)
-#    include(CTest)
-#    find_package(GTest REQUIRED)
-#    enable_testing()
-#    add_subdirectory(test)
-# endif()
+option (PACKAGE_TESTS "Build the tests" ON)
 
 add_library (Diophant STATIC
     
@@ -40,8 +31,11 @@ add_library (Diophant STATIC
     source/Diophant/evaluate.cpp
     source/Diophant/replace.cpp
     source/Diophant/match.cpp
+    source/Diophant/value.cpp
     source/Diophant/expressions/values.cpp
     source/Diophant/expressions/symbol.cpp
+    source/Diophant/expressions/lambda.cpp
+    source/Diophant/expressions/pattern.cpp
     
 )
 
@@ -65,10 +59,19 @@ target_compile_features (Diophant PUBLIC cxx_std_20)
 set_target_properties (Diophant PROPERTIES CXX_EXTENSIONS OFF)
 target_compile_options (Diophant PUBLIC "-fconcepts")
 
-add_executable (Lambda diophant.cpp )
+## Enable testing
+if (PACKAGE_TESTS)
+   include (CTest)
+   find_package (GTest REQUIRED)
+   enable_testing ()
+   add_subdirectory (test)
+endif ()
+
+add_executable (Lambda diophant.cpp)
 
 target_link_libraries (Lambda PUBLIC Diophant)
 target_include_directories (Lambda PUBLIC include)
 
 target_compile_features (Lambda PUBLIC cxx_std_20)
 set_target_properties (Lambda PROPERTIES CXX_EXTENSIONS OFF)
+target_compile_options (Lambda PUBLIC "-fconcepts")

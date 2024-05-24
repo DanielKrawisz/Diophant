@@ -14,7 +14,7 @@ namespace Diophant::expressions {
         
         call (Expression &f, Expression &a) : function {f}, argument {a} {}
         
-        std::ostream &write (std::ostream &) const override;
+        std::ostream &write (std::ostream &o) const override;
 
         bool operator == (const abstract &) const override;
         

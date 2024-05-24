@@ -35,7 +35,8 @@ namespace Diophant {
         predicate (Type, ptr<Diophant::function>);
 
         // dummy function so that we can use maps.
-        bool operator == (const predicate &) {
+        // at the moment, we don't need this. 
+        bool operator == (const predicate &) const {
             return true;
         }
     };
@@ -46,6 +47,10 @@ namespace Diophant {
     struct transformation {
         Diophant::parameters Key;
         Diophant::predicate Value;
+        
+        bool operator == (const transformation &t) const {
+            return Key == t.Key && Value == t.Value;
+        }
     };
 
     //std::partial_ordering operator <=> (const transformation &a, const transformation &b);
@@ -78,18 +83,6 @@ namespace Diophant {
     std::partial_ordering inline operator <=> (const transformation &a, const transformation &b) {
         return a.Key <=> b.Key;
     }*/
-
-    bool inline operator == (Pattern &, Pattern &) {
-        throw method::unimplemented {"pattern == "};
-    }
-
-    std::partial_ordering inline operator <=> (const Pattern &, const Pattern &) {
-        throw method::unimplemented {"pattern <=> "};
-    }
-
-    std::ostream inline &operator << (std::ostream &, Pattern &) {
-        throw method::unimplemented {"pattern << "};
-    }
 
     std::ostream inline &operator << (std::ostream &o, const parameters &p) {
         for (const auto &e : p) e.write (o << " ", call_precedence);

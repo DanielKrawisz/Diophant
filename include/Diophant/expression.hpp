@@ -12,7 +12,8 @@ namespace Diophant {
         
         using ptr<const expressions::abstract>::ptr;
         expression () : ptr<const expressions::abstract> {} {}
-        expression (ptr<const expressions::abstract> p) : ptr<const expressions::abstract> {p} {}
+        expression (const ptr<const expressions::abstract> &p) : ptr<const expressions::abstract> {p} {}
+        expression (ptr<const expressions::abstract> &&p) : ptr<const expressions::abstract> {p} {}
         
         // parse some code and read in an expression.
         expression (const string &);
@@ -26,9 +27,7 @@ namespace Diophant {
         explicit operator std::string () const;
 
         // an expression is valid if it is not a pattern.
-        bool valid () const {
-            throw method::unimplemented {"expression::valid"};
-        }
+        bool valid () const;
 
         std::ostream &write (std::ostream &, Diophant::precedence precedence) const;
         
