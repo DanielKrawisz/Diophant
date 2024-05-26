@@ -8,6 +8,16 @@ namespace Diophant {
     struct type : expression {
         explicit type (Expression &e) : expression {e} {}
         type () : expression {} {}
+        /*
+        static Type Null ();
+        static Type Bool ();
+        static Type N ();
+        static Type Z ();
+        static Type Q ();
+        static Type Float ();
+        static Type String ();
+        static Type Lambda ();*/
+        
     };
 
     // every expression has a type. 

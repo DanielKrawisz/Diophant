@@ -5,19 +5,13 @@
 
 namespace Diophant {
 
-    // this is a bad design
-    struct User {
-        // Read a line of user input.
-        virtual maybe<std::string> read () = 0;
-        // write a result to the user.
-        virtual void write (Expression &) = 0;
-    };
-
     struct Parser {
 
         void read_line (const std::string &);
+        void read_expression (const std::string &);
+        void read_value (const std::string &);
 
-        Parser (User &u) : user {u} {
+        Parser (handler<Expression &> w) : write {w} {
             initialize ();
         }
 
@@ -36,7 +30,7 @@ namespace Diophant {
 
         data::stack<data::stack<Expression>> back {};
 
-        User &user;
+        handler<Expression &> write;
 
         void read_symbol (const data::string &in);
         void read_string (const data::string &in);
@@ -67,14 +61,12 @@ namespace Diophant {
         void boolean_and ();
         void boolean_or ();
 
-        void arrow ();
+        void lambda ();
 
         void intuitionistic_and ();
         void intuitionistic_or ();
         void intuitionistic_implies ();
-
-        void declare ();
-        void infer ();
+        
         void set ();
     };
     

@@ -3,6 +3,7 @@
 #include <Diophant/expressions/symbol.hpp>
 #include <Diophant/expressions/apply.hpp>
 #include <Diophant/expressions/lambda.hpp>
+#include <Diophant/parser.hpp>
 
 namespace Diophant {
 
@@ -50,6 +51,17 @@ namespace Diophant {
     // an expression is valid if it is not a pattern.
     bool expression::valid () const {
         return valid_expr (*this);
+    }
+    
+    // parse some code and read in an expression.
+    expression::expression (const string &x) {
+        maybe<expression> expr;
+        Parser p {[&expr] (Expression &e) {
+            expr = e;
+        }};
+        p.read_expression (x);
+        if (!bool (expr)) throw exception {} << "invalid expression: " << x;
+        *this = *expr;
     }
 }
 

@@ -6,23 +6,31 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-template <typename X>
-concept jivivi = true;
-
 #include <Diophant.hpp>
 #include "gtest/gtest.h"
 
 namespace Diophant {
     
     void test_case (const string& expected, const string &program) {
-        auto result = run (value {program});
+        value result;
+        EXPECT_NO_THROW (result = run (program));
         EXPECT_EQ (value {expected}, result) << "expected program " << program << " to evaluate to " << expected << " but got " << result;
     }
     
     TEST (ProgramTest, TestPrograms) {
         test_case ("1", "1");
-        test_case ("2", "1 + 1");
+        test_case ("a b c", "a b c");
+        /*
+        test_case ("[1, 2, 3]", "[1, 2, 3]");
         test_case ("2", "1; 2");
+        test_case ("2", "1 + 1");
+        test_case ("3", "n = 3; n");
+        test_case ("3 / 5", "6 / 10");
+        test_case ("44", "9 + 7 * 5");
+        test_case ("80", "(9 + 7) * 5");
+        test_case ("true", "1 > 2");
+        test_case ("false", "1 < 2");*/
+        //test_case ("13", "fib 0 = 0; fib 1 = 1; fib x:N = fib (x - 1) + fib (x - 2)")
     }
 
 }

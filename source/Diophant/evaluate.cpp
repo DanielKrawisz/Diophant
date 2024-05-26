@@ -8,7 +8,6 @@ namespace Diophant {
         expression last = x;
         int i = 0;
         while (true) {
-            std::cout << "evaluate "<< x << " round " << (i++) << std::endl;
             expression next = m.evaluate (last, fixed);
             if (next == last) return last;
             last = next;

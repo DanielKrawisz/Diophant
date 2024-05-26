@@ -11,9 +11,10 @@ namespace Diophant {
         // a value is valid if it is a valid expression that contains no unevaluated symbols.
         bool valid () const;
         using expression::expression;
+        value (expression &&x) : expression {x} {}
     };
     
-    value run (const value &);
+    value run (const string &);
     
 }
 

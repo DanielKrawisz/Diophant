@@ -3,31 +3,24 @@
 
 using namespace Diophant;
 
-struct Console : User {
-    maybe<std::string> read () override {
-        std::string input;
-        std::cout << "\n input: ";
-        if (!std::getline (std::cin, input)) return {};
-        return {input};
-    }
-
-    void write (Expression &x) override {
-        std::cout << "\n result: " << std::string (x) << std::endl;
-    }
-};
+maybe<std::string> read () {
+    std::string input;
+    std::cout << "\n input: ";
+    if (!std::getline (std::cin, input)) return {};
+    return {input};
+}
 
 int main (int args, char **arg) {
 
     std::cout << "\nDiophant engaged! " << std::endl;
 
-    // talk to the user via the console.
-    Console u {};
-
-    Parser eval {u};
+    Parser eval {[] (Expression &x) {
+        std::cout << "\n result: " << std::string (x) << std::endl;
+    }};
     
     try {
         while (true) {
-            maybe<string> input = u.read ();
+            maybe<string> input = read ();
             if (!bool (input)) break;
             if (input->empty ()) continue;
 

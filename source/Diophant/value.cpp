@@ -38,4 +38,16 @@ namespace Diophant {
         return valid_value (*this);
     }
     
+    value run (const string &x) {
+        maybe<expression> expr;
+        Parser p {[&expr] (Expression &e) {
+            expr = e;
+        }};
+        p.read_line (x);
+        if (!bool (expr)) throw exception {} << "invalid program: " << x;
+        value result {*expr};
+        if (result.valid ()) return result;
+        throw exception {} << "invalid return value: " << *expr;
+    }
+    
 }
