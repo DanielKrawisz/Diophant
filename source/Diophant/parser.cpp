@@ -94,7 +94,7 @@ namespace parse {
 
     struct comp_expr;
 
-    struct equal_op : seq<ws, string<'=','='>, ws, comp_expr> {};
+    struct bool_equal_op : seq<ws, string<'=','='>, ws, comp_expr> {};
     struct unequal_op : seq<ws, string<'!','='>, ws, comp_expr> {};
     struct greater_equal_op : seq<ws, string<'>','='>, ws, comp_expr> {};
     struct less_equal_op : seq<ws, string<'<','='>, ws, comp_expr> {};
@@ -102,7 +102,7 @@ namespace parse {
     struct less_op : seq<ws, one<'<'>, ws, comp_expr> {};
 
     struct comp_expr : seq<add_expr,
-        opt<sor<equal_op, unequal_op, greater_equal_op, less_equal_op, greater_op, less_op>>> {};
+        opt<sor<bool_equal_op, unequal_op, greater_equal_op, less_equal_op, greater_op, less_op>>> {};
 
     struct bool_and_expr;
     struct bool_or_expr;
@@ -112,8 +112,17 @@ namespace parse {
 
     struct bool_and_expr : seq<comp_expr, opt<bool_and_op>> {};
     struct bool_or_expr : seq<bool_and_expr, opt<bool_or_op>> {};
+    
+    struct equal_expr;
+    struct double_implication_expr;
+    
+    struct equal_op : seq<ws, one<'='>, ws, equal_expr> {};
+    struct double_implication_op : seq<ws, string<'<','=','=','>'>, ws, double_implication_expr> {};
+    
+    struct equal_expr : seq<bool_or_expr, opt<equal_op>> {};
+    struct double_implication_expr : seq<equal_expr, opt<double_implication_op>> {};
 
-    struct is_expr : seq<bool_or_expr, opt<seq<ws, one<':'>, ws, bool_or_expr>>> {};
+    struct is_expr : seq<bool_or_expr, opt<seq<ws, one<':'>, ws, double_implication_expr>>> {};
     
     struct intuitionistic_and_expr;
     struct intuitionistic_or_expr;
@@ -126,11 +135,12 @@ namespace parse {
     struct intuitionistic_or_expr : seq<intuitionistic_and_expr, opt<intuitionistic_or_op>> {};
     struct intuitionistic_implies_expr : seq<intuitionistic_or_expr, opt<intuitionistic_implies_op>> {};
     struct such_that_expr : seq<intuitionistic_implies_expr, opt<seq<ws, string<'/',';'>, ws, intuitionistic_implies_expr>>> {};
-    struct expression : such_that_expr {};
+    struct cast_expr : seq<such_that_expr, opt<seq<ws, string<':',':'>, ws, such_that_expr>>> {};
+    struct expression : cast_expr {};
     
     struct parse_expression : seq<expression, eof> {};
 
-    struct set : seq<one<'='>, ws, expression> {};
+    struct set : seq<string<':', '='>, ws, expression> {};
 
     struct statement : seq<expression, opt<ws, set>> {};
 
@@ -292,7 +302,9 @@ namespace Diophant {
     template <> struct eval_action<parse::set> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            eval.set ();
+            std::cout << "we read a set statement here that is not evaluated: \n\t" << 
+                string_view {in.begin (), in.end () - in.begin ()} << std::endl;
+            //eval.set ();
         }
     };
 
