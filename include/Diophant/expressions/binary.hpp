@@ -20,10 +20,10 @@ namespace Diophant::expressions {
         LESS = 85, 
         BOOLEAN_AND = 90, 
         BOOLEAN_OR = 100, 
-        ARROW = 110, 
-        INTUITIONISTIC_AND = 120, 
-        INTUITIONISTIC_OR = 130, 
-        INTUITIONISTIC_IMPLIES = 140
+        DOUBLE_IMPLICATION = 130, 
+        INTUITIONISTIC_AND = 140, 
+        INTUITIONISTIC_OR = 150, 
+        INTUITIONISTIC_IMPLIES = 160
     };
 
     constexpr uint32 binary_precedence (binary_operand X) {
@@ -45,7 +45,7 @@ namespace Diophant::expressions {
             case binary_operand::LESS : return "<";
             case binary_operand::BOOLEAN_AND : return "&&";
             case binary_operand::BOOLEAN_OR : return "||";
-            case binary_operand::ARROW : return "->";
+            case binary_operand::DOUBLE_IMPLICATION : return "<==>";
             case binary_operand::INTUITIONISTIC_AND : return "&";
             case binary_operand::INTUITIONISTIC_OR : return "|";
             case binary_operand::INTUITIONISTIC_IMPLIES : return "=>";
@@ -139,9 +139,9 @@ namespace Diophant::make {
         return binary_expression::make (binary_operand::BOOLEAN_OR, l, r);
     }
     
-    Expression inline arrow (Expression &l, Expression &r) {
+    Expression inline double_implication (Expression &l, Expression &r) {
         using namespace expressions;
-        return binary_expression::make (binary_operand::ARROW, l, r);
+        return binary_expression::make (binary_operand::DOUBLE_IMPLICATION, l, r);
     }
     
     Expression inline intuitionistic_and (Expression &l, Expression &r) {

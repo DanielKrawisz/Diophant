@@ -19,6 +19,10 @@ namespace Diophant::expressions {
         lambda (Symbol a, Expression b): argument {a}, body {b} {}
         Expression operator () (Expression) const;
         std::ostream &write (std::ostream &) const override;
+        
+        uint32 precedence () const override {
+            return 150;
+        }
     };
 
     std::istream &operator >> (std::istream &i, lambda &l);
@@ -37,7 +41,7 @@ namespace Diophant::expressions {
     }
 
     std::ostream inline &lambda::write (std::ostream &o) const {
-        return o << argument << " -> " << body;
+        return o << "@ " << argument << " -> " << body;
     }
     
 }

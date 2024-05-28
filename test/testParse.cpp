@@ -38,12 +38,18 @@ namespace Diophant {
             "/*this is a lambda*/"
             "(@ x -> x x) z");
         test_case (
+            "Null := null;"
+            "Bool := false | true;"
+            "Sign := negative | zero | positive;"
+            "Value := Null | Bool | Sign | N | Z | Q | String | List .x | map .x .y;");
+        test_case (
             "null : Null := null;"
             "true : Bool := null;"
             "false : Bool := null;"
             "0 : N := null;"
             ".n : N /; --n : N := null;"
-            "\"\" : String := null;");
+            "\"\" : String := null;"
+            "nonzero n. := @ x -> x : n & n != 0");
         test_case (
             "`==` .a .a /; a:Value := true;"
             "`==` .a .b /; a:Value & b:Value := false;"

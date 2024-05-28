@@ -19,7 +19,6 @@ namespace Diophant {
     struct type;
     using Type = const type;
 
-    std::partial_ordering operator <=> (Type &, Type &);
     bool operator == (Type &, Type &);
 
     std::ostream &operator << (std::ostream &, Type &);

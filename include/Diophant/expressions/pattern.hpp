@@ -8,14 +8,14 @@
 namespace Diophant::expressions {
     
     struct typed final: abstract {
-        symbol var;
+        maybe<symbol> var;
         Type type;
         
         static const ptr<const symbol> &make (const std::string &);
         
         std::ostream &write (std::ostream &o) const override {
-            // subject to change
-            return o << var << ":" << type;
+            if (bool (var)) return o << var << "." << type;
+            return o << "_." << type;
         }
         
         typed (const symbol &x) : var {x}, type {} {}

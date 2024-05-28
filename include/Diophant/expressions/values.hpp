@@ -22,6 +22,7 @@ namespace Diophant::expressions {
     using natural = value<data::N>;
     using integer = value<data::Z>;
     using rational = value<data::Q>;
+    using dfloat = value<double>;
     using string = value<data::string>;
     using list = value<data::cross<expression>>;
     using map = value<data::map<Expression, Expression>>;

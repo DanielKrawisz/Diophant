@@ -54,11 +54,13 @@ namespace Diophant {
         if (p.size () != data::size (x)) return {};
         replacements r;
         int i = 0;
+        
         for (Expression &e : x) {
             auto rr = combine (r, match (p[i], e));
             if (!rr) return {};
             r = *rr;
         }
+        
         return {r};
     }
 
@@ -274,13 +276,15 @@ namespace Diophant {
         }
 
         if (auto pc = dynamic_cast<const expressions::call *> (p); pc != nullptr) {
+            
             // first evaluate function and argument.
             expression fun = Diophant::evaluate (pc->function, *this, fixed);
             expression arg = Diophant::evaluate (pc->argument, *this, fixed);
+            
             auto f = fun.get ();
 
             // check for lambda
-            if (auto fl = dynamic_cast<const expressions::lambda *> (f); fl != nullptr)
+            if (auto fl = dynamic_cast<const expressions::lambda *> (f); fl != nullptr) 
                 return Diophant::evaluate (replace (fl->body, {{fl->argument, arg}}), *this, fixed);
 
             stack<Expression> args {arg};

@@ -5,27 +5,25 @@
 
 namespace Diophant {
     
+    struct type;
+    
+    bool operator == (Type &, Type &);
+    
+    std::ostream &operator << (std::ostream &o, Type &);
+    
+    enum intuit : char {
+        no = 0, 
+        yes = 1, 
+        unknown = -1
+    };
+    
+    intuit cast (Type, Expression);
+    intuit cast (Type, Type);
+    
     struct type : expression {
         explicit type (Expression &e) : expression {e} {}
         type () : expression {} {}
-        /*
-        static Type Null ();
-        static Type Bool ();
-        static Type N ();
-        static Type Z ();
-        static Type Q ();
-        static Type Float ();
-        static Type String ();
-        static Type Lambda ();*/
-        
     };
-
-    // every expression has a type. 
-    Type type_of (Expression &);
-
-    std::partial_ordering inline operator <=> (Type &, Type &) {
-        return std::partial_ordering::equivalent;
-    }
     
     bool inline operator == (Type &, Type &) {
         return true;

@@ -1,6 +1,5 @@
 
 #include <Diophant/machine.hpp>
-#include <data/io/wait_for_enter.hpp>
 
 namespace Diophant {
     Expression evaluate (Expression &x, Machine &m, data::set<expressions::symbol> fixed) {
@@ -11,7 +10,6 @@ namespace Diophant {
             expression next = m.evaluate (last, fixed);
             if (next == last) return last;
             last = next;
-            wait_for_enter ();
         }
     }
 }

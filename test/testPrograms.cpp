@@ -18,8 +18,9 @@ namespace Diophant {
     }
     
     TEST (ProgramTest, TestPrograms) {
-        test_case ("1", "1");/*
-        test_case ("[1, 2, 3]", "[1, 2, 3]");
+        test_case ("1", "1");
+        test_case ("1", "(@ x -> x) 1");
+        test_case ("[1, 2, 3]", "[1, 2, 3]");/*
         test_case ("2", "1; 2");
         test_case ("2", "1 + 1");
         test_case ("3", "n = 3; n");

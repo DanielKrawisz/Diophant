@@ -49,7 +49,7 @@ namespace parse {
         string<'i','n'>, not_at<ascii::print>, ws, 
         expression> {};
     
-    struct lambda : seq<one<'@'>, ws, symbol, string<'-','>'>, ws, expression> {};
+    struct lambda : seq<one<'@'>, ws, symbol, ws, string<'-','>'>, ws, expression> {};
 
     // parentheses are only used to group expressions
     struct open_paren : one<'('> {};
@@ -58,18 +58,20 @@ namespace parse {
     struct parenthetical : seq<open_paren, ws, expression, ws, close_paren> {};
 
     struct var : seq<one<'.'>, ws, opt<symbol>> {};
-
-    struct list : seq<one<'['>, ws,
+    
+    struct open_list : one<'['> {};
+    struct close_list : one<']'> {};
+    struct list : seq<open_list, ws,
             opt<seq<expression, ws, star<seq<one<','>, ws, expression, ws>>>>,
-        one<']'>> {};
+        close_list> {};
     
     struct entry : seq<symbol, ws, one<':'>, ws, expression> {};
     struct dstruct : seq<one<'{'>, ws, opt<seq<entry, ws, star<seq<one<','>, ws, entry, ws>>>>, one<'}'>> {};
     
     struct structure;
     struct call : seq<plus<space>, structure> {};
-    struct structure : sor<let, lambda, seq<sor<number_lit, string_lit, symbol, var, 
-        parenthetical, list, dstruct>, star<call>>> {};
+    struct structure : sor<let, seq<sor<number_lit, string_lit, symbol, var, 
+        parenthetical, list, dstruct, lambda>, star<call>>> {};
 
     struct unary_operator : sor<one<'-'>, one<'!'>, one<'~'>, one<'+'>, one<'*'>> {};
     struct unary_expr : seq<star<unary_operator>, structure> {};
@@ -177,6 +179,20 @@ namespace Diophant {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.call ();
+        }
+    };
+
+    template <> struct eval_action<parse::open_list> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.open_list ();
+        }
+    };
+
+    template <> struct eval_action<parse::close_list> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.close_list ();
         }
     };
 
@@ -311,7 +327,8 @@ namespace Diophant {
     template <> struct eval_action<parse::program> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            if (data::size (eval.stack) == 1) {
+            std::cout << "read program " << string_view {in.begin (), in.end () - in.begin ()} << std::endl;
+            if (data::size (eval.stack) >= 1) {
                 auto v = evaluate (eval.stack.first (), eval.machine);
                 eval.write (v);
                 eval.stack = data::stack<Expression> {};
@@ -323,8 +340,7 @@ namespace Diophant {
     template <> struct eval_action<parse::parse_expression> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            std::cout << "parsing expression; stack size = " << data::size (eval.stack) << std::endl;
-            if (data::size (eval.stack) == 1) {
+            if (data::size (eval.stack) >= 1) {
                 eval.write (eval.stack.first ());
                 eval.stack = data::stack<Expression> {};
             }
@@ -340,59 +356,53 @@ namespace Diophant {
     }
 
     void Parser::initialize () {
-        auto symbol_Null = *expressions::symbol::make ("Null", registered);
-        auto symbol_Bool = *expressions::symbol::make ("Bool", registered);
-        auto symbol_N = *expressions::symbol::make ("N", registered);
-        auto symbol_Z = *expressions::symbol::make ("Z", registered);
-        auto symbol_Q = *expressions::symbol::make ("Q", registered);
-        auto symbol_Float = *expressions::symbol::make ("Float", registered);
-        auto symbol_String = *expressions::symbol::make ("String", registered);
-        /*
-        machine.define (subject {symbol_Null},
-            predicate {ptr<function> {new user_defined {type::Null ()}}});
-
-        machine.define (subject {symbol_Bool},
-            predicate {ptr<function> {new user_defined {type::Bool ()}}});
-
-        machine.define (subject {symbol_N},
-            predicate {ptr<function> {new user_defined {type::N ()}}});
-
-        machine.define (subject {symbol_Z},
-            predicate {ptr<function> {new user_defined {type::Z ()}}});
-
-        machine.define (subject {symbol_Q},
-            predicate {ptr<function> {new user_defined {type::Q ()}}});
-
-        machine.define (subject {symbol_Float},
-            predicate {ptr<function> {new user_defined {type::Float ()}}});
-
-        machine.define (subject {symbol_String},
-            predicate {ptr<function> {new user_defined {type::String ()}}});*/
+        read_line (R"((x:Value) == (x:Value) := true; )");
+        read_line (R"((x:Value) == (y:Value) := false; )");
+        read_line (R"(not true := false; )");
+        read_line (R"(not false := true; )");
+        read_line (R"(`!u` : Bool => Bool := not; )");
+        read_line (R"(`!=` (x:Value) (y:Value) := ! (x == y); )");
+        read_line (R"(and true true := true; )");
+        read_line (R"(and (x:Bool) (y:Bool) := false; )");
+        read_line (R"(or false false := false; )");
+        read_line (R"(or (x:Bool) (y:Bool) := false; )");
+        read_line (R"(xor : Bool => Bool => Bool := `!=`; )");
+        read_line (R"(implies (x:Bool) (y:Bool) := or y !x; )");
+        read_line (R"(nand true true := false; )");
+        read_line (R"(nand (x:Bool) (y:Bool) := true; )");
+        read_line (R"(nor false false := true; )");
+        read_line (R"(nor (x:Bool) (y:Bool) := false; )");
+        read_line (R"(`&&` : Bool => Bool => Bool := and; )");
+        read_line (R"(`||` : Bool => Bool => Bool := or; )");
+        read_line (R"(elem .x (Nonzero .n) := elem x n & x /= 0; )");
+        read_line (R"(+N := Nonzero N; )");
+        read_line (R"(`++` : N => +N; )");
+        read_line (R"(`--` : +N => N; )");
+        read_line (R"(`+` : N => N => N; )");
+        read_line (R"(`-` : N => N => N | Null; )");
+        read_line (R"(`*` : N => N => N; )");
+        read_line (R"(`/%` : N => +N => {quotient: N, remainder: N}; )");
+        read_line (R"(`/` : N => +N => Q; )");
+        read_line (R"(`++` : Z => Z; )");
+        read_line (R"(`--` : Z => Z; )");
+        read_line (R"(`+` : Z => Z => Z; )");
+        read_line (R"(`-` : Z => Z => Z; )");
+        read_line (R"(`*` : Z => Z => Z; )");
+        read_line (R"(`/%` : Z => Nonzero Z => {quotient: Z, remainder: N}; )");
+        read_line (R"(`/` : Z => Nonzero Z => Q; )");
+        read_line (R"(`+` : Q => Q => Q; )");
+        read_line (R"(`-` : Q => Q => Q; )");
+        read_line (R"(`*` : Q => Q => Q; )");
+        read_line (R"(`/` : Q => Nonzero Q => Q; )");
+        read_line (R"(`>` : Q => Q => Bool; )");
+        read_line (R"(`<` : Q => Q => Bool; )");
+        read_line (R"(`>=` : Q => Q => Bool; )");
+        read_line (R"(`<=` : Q => Q => Bool; )");
+        read_line (R"(prepend : Stack x => x => Stack x; )");
+        read_line (R"(first : Stack x => x | Null; )");
+        read_line (R"(rest : Stack x => Stack x; )");
         
-        auto symbol_null = *expressions::symbol::make ("null", registered);
-        auto symbol_true = *expressions::symbol::make ("true", registered);
-        auto symbol_false = *expressions::symbol::make ("false", registered);
-
-        machine.define (subject {symbol_null},
-            predicate {ptr<function> {new user_defined {make::null ()}}});
-
-        machine.define (subject {symbol_true},
-            predicate {ptr<function> {new user_defined {make::boolean (true)}}});
-
-        machine.define (subject {symbol_false},
-            predicate {ptr<function> {new user_defined {make::boolean (false)}}});
-        
-        auto symbol_Plus = *expressions::symbol::make ("+", registered);
-        auto symbol_Minus = *expressions::symbol::make ("-", registered);
-        auto symbol_Times = *expressions::symbol::make ("*", registered);
-        auto symbol_Divide = *expressions::symbol::make ("/", registered);
-        
-        auto symbol_Equal = *expressions::symbol::make ("==", registered);
-        auto symbol_Unequal = *expressions::symbol::make ("!=", registered);
-        auto symbol_Greater = *expressions::symbol::make (">", registered);
-        auto symbol_Less = *expressions::symbol::make ("<", registered);
-        auto symbol_GreaterEqual = *expressions::symbol::make (">=", registered);
-        auto symbol_LessEqual = *expressions::symbol::make ("<=", registered);
+        // TODO fill in the missing functions
 
     }
 

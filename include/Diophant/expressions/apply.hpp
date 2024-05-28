@@ -23,7 +23,7 @@ namespace Diophant::expressions {
 }
 
 namespace Diophant {
-    constexpr precedence call_precedence = 100;
+    constexpr precedence call_precedence = 700;
 }
 
 namespace Diophant::make {

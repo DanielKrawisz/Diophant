@@ -5,6 +5,13 @@
 #include <Diophant/replace.hpp>
 
 namespace Diophant {
+    
+    // thrown in the case of a cast that we don't know how to make.
+    struct unknown_cast : exception {
+        unknown_cast (Expression &to, Expression &from) : exception {} {
+            *this << "unknown cast from " << from << " to " << to;
+        }
+    };
 
     maybe<replacements> match (Pattern &, Expression &, data::set<expressions::symbol> fixed = {});
 

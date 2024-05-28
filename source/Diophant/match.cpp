@@ -26,8 +26,14 @@ namespace Diophant {
         const auto pat = p.get ();
         const auto exp = e.get ();
 
-        if (const auto pt = dynamic_cast<const expressions::typed *> (pat); pt != nullptr)
-            return type_of (e) <= pt->type ? maybe<replacements> {{{pt->var, e}}} : maybe<replacements> {};
+        if (const auto pt = dynamic_cast<const expressions::typed *> (pat); pt != nullptr) {
+            intuit castable = cast (pt->type, e);
+            if (castable == yes) {
+                if (bool (pt->var)) return replacements {{*pt->var, e}};
+                return replacements {};
+            } else if (castable == no) return {};
+            else throw unknown_cast {e, p};
+        }
 
         if (const auto pc = dynamic_cast<const expressions::call *> (pat); pc != nullptr) {
             const auto ec = dynamic_cast<const expressions::call *> (exp);
