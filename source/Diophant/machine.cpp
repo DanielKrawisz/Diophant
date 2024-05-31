@@ -8,55 +8,85 @@
 #include <Diophant/expressions/unary.hpp>
 #include <Diophant/expressions/values.hpp>
 #include <Diophant/expressions/lambda.hpp>
+#include <Diophant/expressions/pattern.hpp>
 #include <data/io/unimplemented.hpp>
 
 namespace Diophant {
 
-    std::partial_ordering operator <=> (const parameters &a, const parameters &b) {
-        if (a.size () != b.size ()) return a.size () <=> b.size ();
-        auto ai = a.begin ();
-        auto bi = b.begin ();
-        std::partial_ordering last = std::partial_ordering::equivalent;
-        while (ai != a.end ()) {
-            std::partial_ordering next = *ai <=> *bi;
-            if (next == std::partial_ordering::unordered ||
-                next == std::partial_ordering::less && last == std::partial_ordering::greater ||
-                next == std::partial_ordering::greater && last == std::partial_ordering::less)
-                return std::partial_ordering::unordered;
-            last = next;
-            ai++;
-            bi++;
-        }
-
-        return last;
-    }
-
-    subject::subject (Symbol &x, stack<Expression> z) : subject {x} {
-        parameters.resize (z.size ());
-
-        for (auto &p : parameters) {
-            p = pattern {z.first ()};
-            z = z.rest ();
-        }
-    }
-
-    std::ostream &operator << (std::ostream &o, const predicate &p) {
-        o << ": " << p.type;
-        if (p.function) {
-            o << " = ";
-            if (auto pu = dynamic_cast<const user_defined *> (p.function.get ()); bool (pu)) o << pu->expr;
-            else o << "<(built-in function)>";
-        }
+    std::ostream &indent (std::ostream &o, int ind) {
+        for (int i = 0; i < ind; i++) o << "  ";
         return o;
     }
 
+    std::ostream &print (std::ostream &o, Machine::overloads v, int ind);
+
+    std::ostream &print (std::ostream &o, Machine::transformation v, int ind) {
+        o << v.key;
+        if (bool (v.value)) o << " -> " << v.value;
+        if (v.more_specific.size () != 0) return print (o << " // ", v.more_specific, ind + 1);
+        return o << ";";
+    }
+
+    std::ostream &print (std::ostream &o, Machine::overloads v, int ind) {
+        o << "{\n";
+        for (const auto &t : v) print (o, t, ind + 1);
+        return indent (o, ind) << "}";
+    }
+
+    std::ostream &operator << (std::ostream &o, const Machine &m) {
+        o << "Machine \n{";
+        for (const auto &e : m.definitions) {
+            o << "\n  " << e.first << " : ";
+            print (o, e.second, 1);
+        }
+        return o << "\n}";
+    }
+
+    parameters::parameters (stack<Expression> z, Type st) {
+        params.resize (z.size ());
+
+        for (auto &p : params) {
+            p = pattern {z.first ()};
+            z = z.rest ();
+        }
+
+        such_that = st;
+    }
+
+    maybe<Expression> condition (const parameters &p, stack<Expression> x) {
+        if (p.params.size () != data::size (x)) return {};
+
+        auto pi = p.params.begin ();
+        auto xi = x.begin ();
+
+        replacements r {};
+
+        while (pi != p.params.end ()) {
+            auto rr = match (*pi, *xi);
+            if (!bool (rr)) return {};
+            rr = combine (r, *rr);
+            if (!rr) return {};
+            r = *rr;
+        }
+
+        return replace (p.such_that, r);
+    }
+
     maybe<replacements> match (const parameters &p, stack<Expression> x) {
-        if (p.size () != data::size (x)) return {};
+        if (p.params.size () != data::size (x)) return {};
+        auto c = condition (p, x);
+        if (!bool (c)) return {};
+
+        intuit cx = constructable (*c);
+
+        if (cx == no) return {};
+        if (cx == unknown) throw unknown_construction {p.such_that};
+
         replacements r;
         int i = 0;
         
         for (Expression &e : x) {
-            auto rr = combine (r, match (p[i], e));
+            auto rr = combine (r, match (p.params[i], e));
             if (!rr) return {};
             r = *rr;
         }
@@ -66,92 +96,81 @@ namespace Diophant {
 
     // return the conflicting entry if there is one.
     // will not modify the overloads if there is a conflict.
-    const transformation *insert (Machine::overloads &o, const transformation &e) {
-        stack<transformation &> left;
+    const Machine::transformation *insert (Machine::overloads &o, const Machine::transformation &e);
+
+    void def (const subject &z, maybe<Expression> x, Machine &m) {
+        //
+        auto v = m.definitions.find (z.root);
+        if (v == m.definitions.end ()) {
+            Machine::overloads o {{Machine::transformation {z.parameters, x}}};
+            m.definitions[z.root] = o;
+            return;
+        }
+
+        auto w = insert (v->second, Machine::transformation {z.parameters, x});
+        if (!w) return;
+        throw exception {} << "conflicting definition " << subject {z.root, w->key} << w->value;
+    }
+
+    void Machine::declare (const subject &z) {
+        def (z, {}, *this);
+    }
+
+    void Machine::define (const subject &z, const Expression &p) {
+        def (z, p, *this);
+    }
+
+    Machine::Machine () {}
+
+    // return the conflicting entry if there is one.
+    // will not modify the overloads if there is a conflict.
+    const Machine::transformation *insert (Machine::overloads &o, const Machine::transformation &e) {
+        stack<const Machine::transformation &> left;
         Machine::overloads right = o;
 
+        // flip through the stack
         while (data::size (right) > 0) {
-            transformation &next = right.first ();
+            Machine::transformation &next = right.first ();
 
-            // the key will be greater than the next key if it is a
-            // bigger pattern or if it is more general than next.
-            if (e.Key > next.Key) {
-                left <<= next;
-                right = right.rest ();
-                continue;
+            // we order by the number of parameters, naturally.
+            if (e.key.params.size () > next.key.params.size ()) goto flip;
+            if (e.key.params.size () < next.key.params.size ()) {
+                right << e;
+                break;
             }
 
-            // if an entry already exists, we are allowed to
-            //  * enter a value if one is not already given
-            //  * provide a more specific type than the one already given.
-            if (e.Key == next.Key) {
-                if (e.Value.type > next.Value.type) return &next;
-
-                if (!bool (e.Value.function)) {
-                    // next = entry<Pattern, predicate> {e.Key, predicate {e.Value.type, next.Value.expr}};
-                    next.Value.type = e.Value.type;
+            if (intuit are_equal = equal (e.key, next.key); are_equal == yes) {
+                if (!bool (next.value)) {
+                    *next.value = *e.value;
                     return nullptr;
                 }
 
-                if (!bool (next.Value.function)) {
-                    next.Value = e.Value;
-                    return nullptr;
-                } else {
-                    auto el = dynamic_cast<const user_defined *> (next.Value.function.get ());
-                    auto er = dynamic_cast<const user_defined *> (e.Value.function.get ());
-                    // TODO need to take into account the fact that these could have different varibles.
-                    if (el->expr == er->expr) return nullptr;
-                }
+                // note: this operation is not sufficient since there
+                // could be vars with different names.
+                return next.value == e.value ? nullptr : &next;
+            } else if (are_equal == unknown) throw unknown_operation {};
 
-                return &next;
-            }
+            if (intuit is_sub = sub (e.key, next.key); is_sub == yes)
+                return insert (next.more_specific, e);
+            else if (is_sub == unknown) throw unknown_operation {};
 
-            // we know that e.Key >= next.Key is false. Therefore
-            // you might expect e.Key < next.Key. However, this
-            // is not necessarily true because patterns can be
-            // the same size, unequal, and neither more or less
-            // general than one another. In that case there is a
-            // conflict because there is no way to know what order
-            // the two conflicting rules ought to be applied.
-            if (e.Key < next.Key) {
-                right <<= e;
-                while (left.size () > 0) {
-                    right <<= left.first ();
-                    left = left.rest ();
-                }
-                o = right;
-                return nullptr;
-            }
+            if (intuit are_disjoint = disjoint (e.key, next.key); are_disjoint == no) return &next;
+            else if (are_disjoint == unknown) throw unknown_operation {};
 
-            return &next;
+            flip:
+            left = data::prepend (left, next);
+            right = data::rest (right);
         }
+
+        // put the stack back together
+        while (data::size (left) > 0) {
+            right = data::prepend (right, data::first (left));
+            left = data::rest (left);
+        }
+
+        o = right;
 
         return nullptr;
-    }
-
-    struct definition_match {
-        Diophant::replacements replacements;
-        const Diophant::predicate &predicate;
-    };
-
-    maybe<definition_match> machine_match (const Machine::overloads &o, stack<Expression> x) {
-        for (const auto &e : o) {
-            if (e.Key.size () > x.size ()) return {};
-            if (e.Key.size () < x.size ()) continue;
-
-            auto r = match (e.Key, x);
-            if (!r) continue;
-
-            return definition_match {*r, e.Value};
-        }
-
-        return {};
-    }
-
-    maybe<Expression> match_and_call (const Machine::overloads &o, stack<Expression> x) {
-        auto w = machine_match (o, x);
-        if (!w || !w->predicate.function) return {};
-        return w->predicate.function->call (w->replacements);
     }
 
     subject subject::read (Expression &x) {
@@ -180,39 +199,89 @@ namespace Diophant {
             }
         }
 
+        if (auto pst = dynamic_cast<const expressions::such_that *> (p); pst != nullptr) {
+            auto x = subject::read (pst->pattern);
+            x.parameters.such_that = pst->type;
+            return x;
+        }
+
         if (auto pb = dynamic_cast<const expressions::binary_expression *> (p); pb != nullptr)
-            throw exception {} << "cannot define " << x;
+            throw exception {} << "not yet implemented: define " << x;
 
         if (auto pu = dynamic_cast<const expressions::unary_expression *> (p); pu != nullptr)
-            throw exception {} << "cannot define " << x;
+            throw exception {} << "not yet implemented: define " << x;
 
         fail:
         throw exception {} << "cannot define " << x;
     }
 
-    Machine::Machine () {
-/*
-        define (Pattern {"null"}, Type {"null"}, Expression::null ());
-        define (Pattern {"true"}, Type {"boolean"}, Expression::boolean (true));
-        define (Pattern {"false"}, Type {"boolean"}, Expression::boolean (false));
+    maybe<Expression> match_and_call (const Machine::overloads &o, stack<Expression> x);
 
-        define (Pattern {"-x.Q"}, Type {"Q"});
-        define (Pattern {"x.Q + y.Q"}, Type {"Q"});
-        define (Pattern {"x.Q * y.Q"}, Type {"Q"});
-        define (Pattern {"x.Q - y.Q"}, Type {"Q"});
-        define (Pattern {"x.Q / y.Q"}, Type {"Q"});
+    Expression evaluate_second_step (Machine &m, Expression &x, data::set<expressions::symbol> fixed);
 
-        define (Pattern {"x.bool || y.bool"}, Type {"boolean"});
-        define (Pattern {"x.bool && y.bool"}, Type {"boolean"});
-        define (Pattern {"!x.bool"}, Type {"boolean"});
+    // the first step is to evaluate parts of the expression that require looking up
+    // definitions in the machine. That means symbols and calls.
+    Expression Machine::evaluate (Expression &x, data::set<expressions::symbol> fixed) {
 
-        define (Pattern {"x.Q == y.Q"}, Type {"boolean"});
-        define (Pattern {"x.Q != y.Q"}, Type {"boolean"});
-        define (Pattern {"x.Q <= y.Q"}, Type {"boolean"});
-        define (Pattern {"x.Q >= y.Q"}, Type {"boolean"});
-        define (Pattern {"x.Q < y.Q"}, Type {"boolean"});
-        define (Pattern {"x.Q > y.Q"}, Type {"boolean"});
-*/
+        auto p = x.get ();
+        if (p == nullptr) return x;
+
+        if (auto px = dynamic_cast<const expressions::symbol *> (p); px != nullptr) {
+            if (fixed.contains (*px)) return x;
+            auto v = this->definitions.find (*px);
+            if (v == this->definitions.end ()) return x;
+            auto w = match_and_call (v->second, {});
+            if (!bool (w)) return x;
+            return *w;
+        }
+
+        if (auto pc = dynamic_cast<const expressions::call *> (p); pc != nullptr) {
+
+            // first evaluate function and argument.
+            expression fun = Diophant::evaluate (pc->function, *this, fixed);
+            expression arg = Diophant::evaluate (pc->argument, *this, fixed);
+
+            auto f = fun.get ();
+
+            // check for lambda
+            if (auto fl = dynamic_cast<const expressions::lambda *> (f); fl != nullptr)
+                return Diophant::evaluate (replace (fl->body, {{fl->argument, arg}}), *this, fixed);
+
+            stack<Expression> args {arg};
+            Symbol *q = nullptr;
+
+            while (true) {
+                // check for symbol
+                if (q = dynamic_cast<const expressions::symbol *> (f); q != nullptr) {
+                    if (fixed.contains (*q)) goto end_call;
+                    break;
+                }
+
+                // check for call
+                if (auto fc = dynamic_cast<const expressions::call *> (f); fc != nullptr) {
+                    f = fc->function.get ();
+                    args <<= Diophant::evaluate (fc->argument, *this, fixed);
+                    continue;
+                }
+
+                // Something we can't work with is here so we return.
+                goto end_call;
+            }
+
+            // look up what we got in the dictionary here.
+            {
+                auto v = this->definitions.find (*q);
+                if (v == this->definitions.end ()) goto end_call;
+                auto w = match_and_call (v->second, args);
+                if (!bool (w)) goto end_call;
+                return *w;
+            }
+
+            end_call:
+            return fun == pc->function && arg == pc->argument ? x : make::call (fun, arg);
+        }
+
+        return evaluate_second_step (*this, x, fixed);
     }
 
     Expression evaluate_second_step (Machine &m, Expression &x, data::set<expressions::symbol> fixed) {
@@ -259,120 +328,24 @@ namespace Diophant {
         return x;
     }
 
-    // the first step is to evaluate parts of the expression that require looking up
-    // definitions in the machine. That means symbols and calls.
-    Expression Machine::evaluate (Expression &x, data::set<expressions::symbol> fixed) {
+    struct definition_match {
+        Diophant::replacements replacements;
+        Expression &predicate;
+    };
 
-        auto p = x.get ();
-        if (p == nullptr) return x;
+    maybe<Expression> match_and_call (const Machine::overloads &o, stack<Expression> x) {
+        for (const auto &e : o) {
+            if (e.key.params.size () > x.size ()) return {};
+            if (e.key.params.size () < x.size ()) continue;
 
-        if (auto px = dynamic_cast<const expressions::symbol *> (p); px != nullptr) {
-            if (fixed.contains (*px)) return x;
-            auto v = this->definitions.contains (*px);
-            if (!v) return x;
-            auto w = match_and_call (*v, {});
-            if (!bool (w)) return x;
-            return *w;
+            auto r = match (e.key, x);
+            if (!r) continue;
+
+            if (bool (e.value)) return replace (*e.value, *r);
+            else throw exception {} << "no definition provided";
         }
 
-        if (auto pc = dynamic_cast<const expressions::call *> (p); pc != nullptr) {
-            
-            // first evaluate function and argument.
-            expression fun = Diophant::evaluate (pc->function, *this, fixed);
-            expression arg = Diophant::evaluate (pc->argument, *this, fixed);
-            
-            auto f = fun.get ();
-
-            // check for lambda
-            if (auto fl = dynamic_cast<const expressions::lambda *> (f); fl != nullptr) 
-                return Diophant::evaluate (replace (fl->body, {{fl->argument, arg}}), *this, fixed);
-
-            stack<Expression> args {arg};
-            Symbol *q = nullptr;
-
-            while (true) {
-                // check for symbol
-                if (q = dynamic_cast<const expressions::symbol *> (f); q != nullptr) {
-                    if (fixed.contains (*q)) goto end_call;
-                    break;
-                }
-
-                // check for call
-                if (auto fc = dynamic_cast<const expressions::call *> (f); fc != nullptr) {
-                    f = fc->function.get ();
-                    args <<= Diophant::evaluate (fc->argument, *this, fixed);
-                    continue;
-                }
-
-                // Something we can't work with is here so we return.
-                goto end_call;
-            }
-
-            // look up what we got in the dictionary here.
-            {
-                auto v = this->definitions.contains (*q);
-                if (!v) goto end_call;
-                auto w = match_and_call (*v, args);
-                if (!bool (w)) goto end_call;
-                return *w;
-            }
-
-            end_call:
-            return fun == pc->function && arg == pc->argument ? x : make::call (fun, arg);
-        }
-
-        return evaluate_second_step (*this, x, fixed);
-    }
-
-    void Machine::declare (const subject &z, Type t) {
-        //
-        auto v = definitions.contains (z.root);
-        if (!v) {
-            overloads o {{transformation {z.parameters, predicate {t}}}};
-            auto d = definitions.insert (z.root, o);
-            definitions = d;
-            return;
-        }
-
-        auto w = insert (*v, {z.parameters, predicate {t}});
-        if (!w) return;
-        throw exception {} << "conflicting definition " << subject {z.root, w->Key} << w->Value;
-
-    }
-
-    void Machine::define (const subject &z, const predicate &p) {
-
-        auto v = definitions.contains (z.root);
-        if (!v) {
-            definitions = definitions.insert (z.root, overloads {{z.parameters, p}});
-            return;
-        }
-
-        auto w = insert (*v, {z.parameters, p});
-        if (!w) return;
-        throw exception {} << "conflicting definition " << subject {z.root, w->Key} << w->Value;
-    }
-
-    std::ostream &operator << (std::ostream &o, const Machine &m) {
-        o << "Machine \n{";
-        for (const auto &e : m.definitions) {
-            o << "\n    " << e.Key;
-            for (const auto &x : e.Value)
-                o << "\n        " << x.Key << x.Value;
-        }
-        return o << "\n}";
-    }
-
-    bool operator == (Pattern &, Pattern &) {
-        throw method::unimplemented {"pattern == "};
-    }
-
-    std::partial_ordering operator <=> (const Pattern &, const Pattern &) {
-        throw method::unimplemented {"pattern <=> "};
-    }
-
-    std::ostream &operator << (std::ostream &, Pattern &) {
-        throw method::unimplemented {"pattern << "};
+        return {};
     }
 
 }

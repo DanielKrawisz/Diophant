@@ -2,6 +2,7 @@
 #define DIOPHANT_PARSER
 
 #include <Diophant/machine.hpp>
+#include <Diophant/expressions/pattern.hpp>
 
 namespace Diophant {
 
@@ -41,31 +42,41 @@ namespace Diophant {
         void close_list ();
         void close_object ();
 
+        void lambda ();
+
         void call ();
 
         void negate ();
+        void boolean_not ();
+
         void mul ();
         void pow ();
         void div ();
+        void div_mod ();
+
         void plus ();
         void minus ();
 
-        void equal ();
-        void unequal ();
         void greater_equal ();
         void less_equal ();
         void greater ();
         void less ();
 
-        void boolean_not ();
+        void bool_equal ();
+        void bool_unequal ();
+
         void boolean_and ();
         void boolean_or ();
 
-        void lambda ();
+        void equal ();
+        void unequal ();
+        void double_implication_expr ();
 
         void intuitionistic_and ();
         void intuitionistic_or ();
         void intuitionistic_implies ();
+
+        void such_that ();
         
         void set ();
     };
@@ -102,12 +113,24 @@ namespace Diophant {
         stack = prepend (rest (rest (stack)), make::divide (first (rest (stack)), first (stack)));
     }
 
+    void inline Parser::div_mod () {
+        stack = prepend (rest (rest (stack)), make::div_mod (first (rest (stack)), first (stack)));
+    }
+
     void inline Parser::plus () {
         stack = prepend (rest (rest (stack)), make::plus (first (rest (stack)), first (stack)));
     }
 
     void inline Parser::minus () {
         stack = prepend (rest (rest (stack)), make::minus (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::bool_equal () {
+        stack = prepend (rest (rest (stack)), make::bool_equal (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::bool_unequal () {
+        stack = prepend (rest (rest (stack)), make::bool_unequal (first (rest (stack)), first (stack)));
     }
 
     void inline Parser::equal () {
@@ -152,6 +175,10 @@ namespace Diophant {
 
     void inline Parser::intuitionistic_implies () {
         stack = prepend (rest (rest (stack)), make::intuitionistic_implies (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::such_that () {
+        stack = prepend (rest (rest (stack)), make::such_that (first (rest (stack)), first (stack)));
     }
 
     void inline Parser::call () {

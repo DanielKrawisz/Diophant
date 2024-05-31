@@ -20,10 +20,15 @@ namespace Diophant {
     TEST (ProgramTest, TestPrograms) {
         test_case ("1", "1");
         test_case ("1", "(@ x -> x) 1");
-        test_case ("[1, 2, 3]", "[1, 2, 3]");/*
+        test_case ("[1, 2, 3]", "[1, 2, 3]");
         test_case ("2", "1; 2");
+        test_case ("false", "!true");
+        test_case ("true", "!false");
+        test_case ("false", "and false true");
+        test_case ("true", "or false true");
+        test_case ("3", "n -> 3; n");
+        /*
         test_case ("2", "1 + 1");
-        test_case ("3", "n = 3; n");
         test_case ("3 / 5", "6 / 10");
         test_case ("44", "9 + 7 * 5");
         test_case ("80", "(9 + 7) * 5");

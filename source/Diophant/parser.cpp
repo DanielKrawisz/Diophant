@@ -11,7 +11,7 @@
 namespace parse {
     using namespace tao::pegtl;
     
-    struct comment : seq<string<'/','*'>, star<seq<not_at<string<'*','/'>>, ascii::print>>, string<'*','/'>> {};
+    struct comment : seq<string<'/','<'>, star<seq<not_at<string<'>','/'>>, ascii::print>>, string<'>','/'>> {};
     struct white : sor<space, comment> {};
     struct ws : star<white> {};
 
@@ -44,11 +44,15 @@ namespace parse {
     struct expression;
     struct statement;
     
-    struct let : seq<string<'l', 'e', 't'>, not_at<ascii::print>, ws, 
+    struct let : seq<string<'l', 'e', 't'>, not_at<ascii::print>, ws,
         statement, star<seq<ws, one<','>, statement>>, 
         string<'i','n'>, not_at<ascii::print>, ws, 
         expression> {};
-    
+
+    struct dif : seq<string<'i', 'f'>, not_at<ascii::print>, ws, expression, ws,
+        string<'t', 'h', 'e', 'n'>, not_at<ascii::print>, ws, expression, ws,
+        string<'e', 'l', 's', 'e'>, not_at<ascii::print>, ws, expression> {};
+
     struct lambda : seq<one<'@'>, ws, symbol, ws, string<'-','>'>, ws, expression> {};
 
     // parentheses are only used to group expressions
@@ -68,43 +72,53 @@ namespace parse {
     struct entry : seq<symbol, ws, one<':'>, ws, expression> {};
     struct dstruct : seq<one<'{'>, ws, opt<seq<entry, ws, star<seq<one<','>, ws, entry, ws>>>>, one<'}'>> {};
     
-    struct structure;
-    struct call : seq<plus<space>, structure> {};
-    struct structure : sor<let, seq<sor<number_lit, string_lit, symbol, var, 
-        parenthetical, list, dstruct, lambda>, star<call>>> {};
+    struct structure : sor<number_lit, string_lit, symbol, var, let, parenthetical, list, dstruct, lambda> {};
+
+    struct call : seq<structure, opt<star<plus<white>, structure>>> {};
 
     struct unary_operator : sor<one<'-'>, one<'!'>, one<'~'>, one<'+'>, one<'*'>> {};
-    struct unary_expr : seq<star<unary_operator>, structure> {};
+    struct unary_expr : seq<star<unary_operator>, call> {};
 
-    struct mul_expr;
     struct pow_expr;
+    struct mul_expr;
+    struct mod_expr;
+    struct div_mod_expr;
     struct div_expr;
     struct sub_expr;
     struct add_expr;
 
+    struct pow_op : seq<ws, one<'^'>, ws, pow_expr> {};
     struct mul_op : seq<ws, sor<one<'*'>, one<'%'>, one<'~'>>, ws, mul_expr> {};
-    struct pow_op : seq<ws, one<'^'>, ws, div_expr> {};
-    struct div_op : seq<ws, sor<one<'/'>, string<'/', '%'>>, ws, div_expr> {};
+    struct mod_op : seq<ws, string<'%'>, ws, mod_expr> {};
+    struct div_mod_op : seq<ws, string<'/', '%'>, ws, div_mod_expr> {};
+    struct div_op : seq<ws, one<'/'>, ws, div_expr> {};
     struct sub_op : seq<ws, one<'-'>, ws, sub_expr> {};
     struct add_op : seq<ws, one<'+'>, ws, add_expr> {};
 
-    struct mul_expr : seq<unary_expr, opt<mul_op>> {};
-    struct pow_expr : seq<mul_expr, opt<pow_op>> {};
-    struct div_expr : seq<pow_expr, opt<div_op>> {};
+    struct pow_expr : seq<unary_expr, opt<pow_op>> {};
+    struct mul_expr : seq<pow_expr, opt<mul_op>> {};
+    struct mod_expr : seq<mul_expr, opt<mod_op>> {};
+    struct div_mod_expr : seq<mod_expr, opt<div_mod_op>> {};
+    struct div_expr : seq<div_mod_expr, opt<div_op>> {};
     struct sub_expr : seq<div_expr, opt<sub_op>> {};
     struct add_expr : seq<sub_expr, opt<add_op>> {};
 
     struct comp_expr;
-
-    struct bool_equal_op : seq<ws, string<'=','='>, ws, comp_expr> {};
-    struct unequal_op : seq<ws, string<'!','='>, ws, comp_expr> {};
     struct greater_equal_op : seq<ws, string<'>','='>, ws, comp_expr> {};
     struct less_equal_op : seq<ws, string<'<','='>, ws, comp_expr> {};
     struct greater_op : seq<ws, one<'>'>, ws, comp_expr> {};
     struct less_op : seq<ws, one<'<'>, ws, comp_expr> {};
 
     struct comp_expr : seq<add_expr,
-        opt<sor<bool_equal_op, unequal_op, greater_equal_op, less_equal_op, greater_op, less_op>>> {};
+        opt<sor<greater_equal_op, less_equal_op, greater_op, less_op>>> {};
+
+    struct bool_equal_expr;
+
+    struct bool_equal_op : seq<ws, string<'=','='>, ws, bool_equal_expr> {};
+    struct bool_unequal_op : seq<ws, string<'!','='>, ws, bool_equal_expr> {};
+
+    struct bool_equal_expr : seq<comp_expr,
+        opt<sor<bool_equal_op, bool_unequal_op>>> {};
 
     struct bool_and_expr;
     struct bool_or_expr;
@@ -116,9 +130,11 @@ namespace parse {
     struct bool_or_expr : seq<bool_and_expr, opt<bool_or_op>> {};
     
     struct equal_expr;
+    struct unequal_expr;
     struct double_implication_expr;
     
     struct equal_op : seq<ws, one<'='>, ws, equal_expr> {};
+    struct unequal_op : seq<ws, string<'/', '='>, ws, unequal_expr> {};
     struct double_implication_op : seq<ws, string<'<','=','=','>'>, ws, double_implication_expr> {};
     
     struct equal_expr : seq<bool_or_expr, opt<equal_op>> {};
@@ -136,15 +152,15 @@ namespace parse {
     struct intuitionistic_and_expr : seq<is_expr, opt<intuitionistic_and_op>> {};
     struct intuitionistic_or_expr : seq<intuitionistic_and_expr, opt<intuitionistic_or_op>> {};
     struct intuitionistic_implies_expr : seq<intuitionistic_or_expr, opt<intuitionistic_implies_op>> {};
-    struct such_that_expr : seq<intuitionistic_implies_expr, opt<seq<ws, string<'/',';'>, ws, intuitionistic_implies_expr>>> {};
-    struct cast_expr : seq<such_that_expr, opt<seq<ws, string<':',':'>, ws, such_that_expr>>> {};
+    struct cast_expr : seq<intuitionistic_implies_expr, opt<seq<ws, string<'#'>, ws, intuitionistic_implies_expr>>> {};
     struct expression : cast_expr {};
     
     struct parse_expression : seq<expression, eof> {};
 
-    struct set : seq<string<':', '='>, ws, expression> {};
+    struct such_that : seq<ws, string<'?'>, ws, intuitionistic_implies_expr> {};
+    struct set : seq<string<'-', '>'>, ws, expression> {};
 
-    struct statement : seq<expression, opt<ws, set>> {};
+    struct statement : seq<expression, opt<ws, such_that>, opt<ws, set>> {};
 
     struct program : seq<statement, opt<seq<ws, one<';'>, statement>>, eof> {};
 }
@@ -196,6 +212,13 @@ namespace Diophant {
         }
     };
 
+    template <> struct eval_action<parse::lambda> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.lambda ();
+        }
+    };
+
     template <> struct eval_action<parse::mul_op> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
@@ -217,6 +240,13 @@ namespace Diophant {
         }
     };
 
+    template <> struct eval_action<parse::div_mod_op> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.div_mod ();
+        }
+    };
+
     template <> struct eval_action<parse::add_op> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
@@ -228,20 +258,6 @@ namespace Diophant {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.minus ();
-        }
-    };
-
-    template <> struct eval_action<parse::equal_op> {
-        template <typename Input>
-        static void apply (const Input &in, Parser &eval) {
-            eval.equal ();
-        }
-    };
-
-    template <> struct eval_action<parse::unequal_op> {
-        template <typename Input>
-        static void apply (const Input &in, Parser &eval) {
-            eval.unequal ();
         }
     };
 
@@ -273,6 +289,20 @@ namespace Diophant {
         }
     };
 
+    template <> struct eval_action<parse::bool_equal_op> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.bool_equal ();
+        }
+    };
+
+    template <> struct eval_action<parse::bool_unequal_op> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.bool_unequal ();
+        }
+    };
+
     template <> struct eval_action<parse::bool_and_op> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
@@ -287,10 +317,17 @@ namespace Diophant {
         }
     };
 
-    template <> struct eval_action<parse::lambda> {
+    template <> struct eval_action<parse::equal_op> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            eval.lambda ();
+            eval.equal ();
+        }
+    };
+
+    template <> struct eval_action<parse::unequal_op> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.unequal ();
         }
     };
 
@@ -315,19 +352,23 @@ namespace Diophant {
         }
     };
 
+    template <> struct eval_action<parse::such_that> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.such_that ();
+        }
+    };
+
     template <> struct eval_action<parse::set> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            std::cout << "we read a set statement here that is not evaluated: \n\t" << 
-                string_view {in.begin (), in.end () - in.begin ()} << std::endl;
-            //eval.set ();
+            eval.set ();
         }
     };
 
     template <> struct eval_action<parse::program> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            std::cout << "read program " << string_view {in.begin (), in.end () - in.begin ()} << std::endl;
             if (data::size (eval.stack) >= 1) {
                 auto v = evaluate (eval.stack.first (), eval.machine);
                 eval.write (v);
@@ -356,51 +397,51 @@ namespace Diophant {
     }
 
     void Parser::initialize () {
-        read_line (R"((x:Value) == (x:Value) := true; )");
-        read_line (R"((x:Value) == (y:Value) := false; )");
-        read_line (R"(not true := false; )");
-        read_line (R"(not false := true; )");
-        read_line (R"(`!u` : Bool => Bool := not; )");
-        read_line (R"(`!=` (x:Value) (y:Value) := ! (x == y); )");
-        read_line (R"(and true true := true; )");
-        read_line (R"(and (x:Bool) (y:Bool) := false; )");
-        read_line (R"(or false false := false; )");
-        read_line (R"(or (x:Bool) (y:Bool) := false; )");
-        read_line (R"(xor : Bool => Bool => Bool := `!=`; )");
-        read_line (R"(implies (x:Bool) (y:Bool) := or y !x; )");
-        read_line (R"(nand true true := false; )");
-        read_line (R"(nand (x:Bool) (y:Bool) := true; )");
-        read_line (R"(nor false false := true; )");
-        read_line (R"(nor (x:Bool) (y:Bool) := false; )");
-        read_line (R"(`&&` : Bool => Bool => Bool := and; )");
-        read_line (R"(`||` : Bool => Bool => Bool := or; )");
-        read_line (R"(elem .x (Nonzero .n) := elem x n & x /= 0; )");
-        read_line (R"(+N := Nonzero N; )");
-        read_line (R"(`++` : N => +N; )");
-        read_line (R"(`--` : +N => N; )");
-        read_line (R"(`+` : N => N => N; )");
-        read_line (R"(`-` : N => N => N | Null; )");
-        read_line (R"(`*` : N => N => N; )");
-        read_line (R"(`/%` : N => +N => {quotient: N, remainder: N}; )");
-        read_line (R"(`/` : N => +N => Q; )");
-        read_line (R"(`++` : Z => Z; )");
-        read_line (R"(`--` : Z => Z; )");
-        read_line (R"(`+` : Z => Z => Z; )");
-        read_line (R"(`-` : Z => Z => Z; )");
-        read_line (R"(`*` : Z => Z => Z; )");
-        read_line (R"(`/%` : Z => Nonzero Z => {quotient: Z, remainder: N}; )");
-        read_line (R"(`/` : Z => Nonzero Z => Q; )");
-        read_line (R"(`+` : Q => Q => Q; )");
-        read_line (R"(`-` : Q => Q => Q; )");
-        read_line (R"(`*` : Q => Q => Q; )");
-        read_line (R"(`/` : Q => Nonzero Q => Q; )");
-        read_line (R"(`>` : Q => Q => Bool; )");
-        read_line (R"(`<` : Q => Q => Bool; )");
-        read_line (R"(`>=` : Q => Q => Bool; )");
-        read_line (R"(`<=` : Q => Q => Bool; )");
-        read_line (R"(prepend : Stack x => x => Stack x; )");
-        read_line (R"(first : Stack x => x | Null; )");
-        read_line (R"(rest : Stack x => Stack x; )");
+        read_line (R"(.x == .x ? x:Value -> true; )");
+        read_line (R"(.x == .y ? x:Value & y:Value -> false; )");
+        read_line (R"(not true -> false; )");
+        read_line (R"(not false -> true; )");
+        read_line (R"(!.x ? x:Bool -> not; )");
+        read_line (R"(.x != .y ? x:Value & y:Value -> !(x == y); )");
+        read_line (R"(and true true -> true; )");
+        read_line (R"(and .x .y ? x:Bool & y:Bool -> false; )");
+        read_line (R"(or false false -> false; )");
+        read_line (R"(or .x .y ? x:Bool & y:Bool -> false; )");
+        read_line (R"(xor .x .y ? x:Bool & y:Bool -> `!=`; )");
+        read_line (R"(implies .x .y ? x:Bool & y:Bool -> or y !x; )");
+        read_line (R"(nand true true -> false; )");
+        read_line (R"(nand .x .y ? x:Bool y:Bool -> true; )");
+        read_line (R"(nor false false -> true; )");
+        read_line (R"(nor .x .y ? x:Bool & y:Bool -> false; )");
+        read_line (R"(`&&` -> Bool => Bool => Bool # and; )");
+        read_line (R"(`||` -> Bool => Bool => Bool # or; )");
+        read_line (R"(.x : Nonzero .n -> x : N & x != 0 )");
+        read_line (R"(+N -> Nonzero N; )");
+        read_line (R"(`++` ? `++` : N => +N; )");
+        read_line (R"(`--` ? `--` : +N => N; )");
+        read_line (R"(`+` ? `+` : N => N => N; )");
+        read_line (R"(`-` ? `-` : N => N => N | Null; )");
+        read_line (R"(`*` ? `*` : N => N => N; )");
+        read_line (R"(`/%` ? `/%` : N => +N => {quotient: N, remainder: N}; )");
+        read_line (R"(`/` ? `/` : N => +N => Q; )");
+        read_line (R"(`++` ? `++` : Z => Z; )");
+        read_line (R"(`--` ? `--` : Z => Z; )");
+        read_line (R"(`+` ? `+` : Z => Z => Z; )");
+        read_line (R"(`-` ? `-` : Z => Z => Z; )");
+        read_line (R"(`*` ? `*` : Z => Z => Z; )");
+        read_line (R"(`/%` ? `/%` : Z => Nonzero Z => {quotient: Z, remainder: N}; )");
+        read_line (R"(`/` ? `/` : Z => Nonzero Z => Q; )");
+        read_line (R"(`+` ? `+` : Q => Q => Q; )");
+        read_line (R"(`-` ? `-` : Q => Q => Q; )");
+        read_line (R"(`*` ? `*` : Q => Q => Q; )");
+        read_line (R"(`/` ? `/` : Q => Nonzero Q => Q; )");
+        read_line (R"(`>` ? `>` : Q => Q => Bool; )");
+        read_line (R"(`<` ? `<` : Q => Q => Bool; )");
+        read_line (R"(`>=` ? `>=` : Q => Q => Bool; )");
+        read_line (R"(`<=` ? `<=` : Q => Q => Bool; )");
+        read_line (R"(prepend ? prepend : Stack x => x => Stack x; )");
+        read_line (R"(first ? first : Stack x => x | Null; )");
+        read_line (R"(rest ? rest : Stack x => Stack x; )");
         
         // TODO fill in the missing functions
 
@@ -436,7 +477,7 @@ namespace Diophant {
     }
     
     void Parser::set () {
-        machine.define (subject::read (first (rest (stack))), predicate {ptr<function> {new user_defined {first (stack)}}});
+        machine.define (subject::read (first (rest (stack))), first (stack));
         stack = prepend (rest (rest (stack)), first (stack));
     }
 }

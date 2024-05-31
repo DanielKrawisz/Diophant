@@ -31,6 +31,7 @@ add_library (Diophant STATIC
     source/Diophant/evaluate.cpp
     source/Diophant/replace.cpp
     source/Diophant/match.cpp
+    source/Diophant/pattern.cpp
     source/Diophant/value.cpp
     source/Diophant/expressions/values.cpp
     source/Diophant/expressions/symbol.cpp

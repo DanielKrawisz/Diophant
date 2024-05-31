@@ -2,43 +2,60 @@
 #define DIOPHANT_EXPRESSIONS_PATTERN
 
 #include <Diophant/expressions/expressions.hpp>
-#include <Diophant/type.hpp>
 #include <Diophant/expressions/symbol.hpp>
+#include <Diophant/pattern.hpp>
+#include <Diophant/replace.hpp>
 
 namespace Diophant::expressions {
     
-    struct typed final: abstract {
-        maybe<symbol> var;
-        Type type;
+    struct var final: abstract {
+        maybe<symbol> name;
         
         static const ptr<const symbol> &make (const std::string &);
         
         std::ostream &write (std::ostream &o) const override {
-            if (bool (var)) return o << var << "." << type;
-            return o << "_." << type;
+            return bool (name) ? o << "." << name : o << "_";
         }
         
-        typed (const symbol &x) : var {x}, type {} {}
-        typed (const symbol &x, const Type &t) : var {x}, type {t} {}
+        var () : name {} {}
+        var (const symbol &x) : name {x} {}
 
         bool operator == (const abstract &) const override;
         
+    };
+
+    struct such_that final : abstract {
+        Pattern pattern;
+        Type type;
+
+        such_that (Pattern p, Type t) : pattern {p}, type {t} {}
+
+        std::ostream &write (std::ostream &o) const override {
+            return o << pattern << " ? " << type;
+        }
+
+        bool operator == (const abstract &) const override;
+
+        Diophant::precedence precedence () const override {
+            return 5;
+        }
     };
     
 }
 
 namespace Diophant::make {
-    Expression inline typed (const Type &t, Symbol &x) {
-        return expression {std::static_pointer_cast<const expressions::abstract> (std::make_shared<const expressions::typed> (x, t))};
+    Pattern inline any () {
+        return pattern {std::static_pointer_cast<const expressions::abstract> (std::make_shared<const expressions::var> ())};
+    }
+
+    Pattern inline var (Symbol &x) {
+        return pattern {std::static_pointer_cast<const expressions::abstract> (std::make_shared<const expressions::var> (x))};
+    }
+
+    Pattern inline such_that (Pattern &p, Type &x) {
+        return pattern {std::static_pointer_cast<const expressions::abstract> (std::make_shared<const expressions::such_that> (p, x))};
     }
 }
-/*
-namespace Diophant::expressions {
-        
-    maybe<replacements> inline pattern::match (Expression &e, const Machine &m) const {
-        return m.cast (type, e) ? maybe<replacements> {replacements {replacement {var, e}}} : maybe<replacements> {};
-    }
-}*/
 
 #endif
 

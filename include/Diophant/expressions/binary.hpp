@@ -11,6 +11,8 @@ namespace Diophant::expressions {
         MINUS = 40, 
         TIMES = 50, 
         POWER = 60, 
+        MOD = 63,
+        DIVMOD = 67,
         DIVIDE = 70,
         EQUAL = 80,
         UNEQUAL = 81, 
@@ -36,6 +38,8 @@ namespace Diophant::expressions {
             case binary_operand::MINUS : return "-";
             case binary_operand::TIMES : return "*";
             case binary_operand::POWER : return "^";
+            case binary_operand::MOD : return "%";
+            case binary_operand::DIVMOD : return "/%";
             case binary_operand::DIVIDE : return "/";
             case binary_operand::EQUAL : return "==";
             case binary_operand::UNEQUAL : return "!=";
@@ -97,6 +101,16 @@ namespace Diophant::make {
     Expression inline divide (Expression &l, Expression &r) {
         using namespace expressions;
         return binary_expression::make (binary_operand::DIVIDE, l, r);
+    }
+
+    Expression inline mod (Expression &l, Expression &r) {
+        using namespace expressions;
+        return binary_expression::make (binary_operand::MOD, l, r);
+    }
+
+    Expression inline div_mod (Expression &l, Expression &r) {
+        using namespace expressions;
+        return binary_expression::make (binary_operand::DIVMOD, l, r);
     }
     
     Expression inline equal (Expression &l, Expression &r) {

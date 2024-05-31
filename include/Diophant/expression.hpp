@@ -2,7 +2,6 @@
 #define DIOPHANT_EXPRESSION
 
 #include <Diophant/expressions/expressions.hpp>
-#include <Diophant/pattern.hpp>
 #include <Diophant/symbol.hpp>
 
 namespace Diophant {
@@ -62,6 +61,8 @@ namespace Diophant::make {
     Expression times (Expression &, Expression &);
     Expression power (Expression &, Expression &);
     Expression divide (Expression &, Expression &);
+    Expression mod (Expression &, Expression &);
+    Expression div_mod (Expression &, Expression &);
 
     Expression equal (Expression &, Expression &);
     Expression unequal (Expression &, Expression &);
@@ -70,15 +71,19 @@ namespace Diophant::make {
     Expression greater (Expression &, Expression &);
     Expression less (Expression &, Expression &);
 
+    Expression bool_equal (Expression &, Expression &);
+    Expression bool_unequal (Expression &, Expression &);
+
     Expression boolean_not (Expression &);
     Expression boolean_and (Expression &, Expression &);
     Expression boolean_or (Expression &, Expression &);
 
+    Expression equal (Expression &, Expression &);
+    Expression unequal (Expression &, Expression &);
+
     Expression intuitionistic_and (Expression &, Expression &);
     Expression intuitionistic_or (Expression &, Expression &);
     Expression intuitionistic_implies (Expression &, Expression &);
-    
-    Expression pattern (Symbol &, const Type &);
 
 }
 

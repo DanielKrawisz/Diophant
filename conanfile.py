@@ -2,8 +2,8 @@ from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
 from os import environ
 
-class DiophantConan(ConanFile):
-    name = "Diophant"
+class DiophantConan (ConanFile):
+    name = "diophant"
     license = "MIT"
     author = "Daniel Krawisz danielkrawisz@protonmail.com"
     url = "https://github.com/DanielKrawisz/Diophant"

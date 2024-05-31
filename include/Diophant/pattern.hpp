@@ -1,7 +1,8 @@
 #ifndef DIOPHANT_PATTERN
 #define DIOPHANT_PATTERN
 
-#include <Diophant/data.hpp>
+#include <Diophant/symbol.hpp>
+#include <Diophant/type.hpp>
 
 namespace Diophant {
 
@@ -13,6 +14,16 @@ namespace Diophant {
     
     std::ostream &operator << (std::ostream &, Pattern &);
 
+    intuit equal (Pattern, Pattern);
+    intuit disjoint (Pattern, Pattern);
+    intuit sub (Pattern, Pattern);
+
+}
+
+namespace Diophant::make {
+    Pattern any ();
+    Pattern var (Symbol &x);
+    Pattern such_that (Pattern &, Type &);
 }
 
 #endif

@@ -15,18 +15,6 @@ namespace Diophant {
     using replacements = map<Symbol, Expression>;
     
     Expression replace (Expression, replacements);
-
-    struct function {
-        virtual Expression call (replacements) const = 0;
-    };
-
-    struct user_defined final : function {
-        Expression expr;
-        user_defined (Expression ex) : expr {ex} {}
-        Expression call (replacements r) const override {
-            return replace (expr, r);
-        }
-    };
     
 }
 

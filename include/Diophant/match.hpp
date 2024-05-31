@@ -3,12 +3,12 @@
 
 #include <Diophant/pattern.hpp>
 #include <Diophant/replace.hpp>
+#include <Diophant/type.hpp>
 
 namespace Diophant {
-    
-    // thrown in the case of a cast that we don't know how to make.
-    struct unknown_cast : exception {
-        unknown_cast (Expression &to, Expression &from) : exception {} {
+
+    struct unknown_cast : unknown_operation {
+        unknown_cast (Expression &to, Type &from) : unknown_operation {} {
             *this << "unknown cast from " << from << " to " << to;
         }
     };
@@ -16,6 +16,8 @@ namespace Diophant {
     maybe<replacements> match (Pattern &, Expression &, data::set<expressions::symbol> fixed = {});
 
     maybe<replacements> combine (maybe<replacements>, maybe<replacements>);
+
+    intuit constructable (Type &);
 
 }
 

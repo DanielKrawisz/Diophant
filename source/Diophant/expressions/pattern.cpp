@@ -3,7 +3,11 @@
 
 namespace Diophant::expressions {
     
-    bool typed::operator == (const abstract &) const {
+    bool var::operator == (const abstract &) const {
+        throw method::unimplemented {"typed =="};
+    }
+
+    bool such_that::operator == (const abstract &) const {
         throw method::unimplemented {"typed =="};
     }
 }

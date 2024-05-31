@@ -9,57 +9,43 @@
 
 namespace Diophant {
 
-    struct parameters : cross<pattern> {};
-    std::ostream &operator << (std::ostream &, const parameters &);
-    std::partial_ordering operator <=> (const parameters &, const parameters &);
+    struct unknown_construction : unknown_operation {
+        unknown_construction (Type &x) : unknown_operation {} {
+            *this << "do not know if we can construct type " << x;
+        }
+    };
 
-    maybe<replacements> match (const parameters &, stack<Expression>);
+    struct parameters {
+        cross<pattern> params;
+        type such_that;
+
+        parameters (): params {}, such_that {} {}
+        parameters (stack<Expression> z, Type st = {});
+
+    };
+
+    intuit equal (const parameters &, const parameters &);
+    intuit disjoint (const parameters &, const parameters &);
+    intuit sub (const parameters &, const parameters &);
+
+    std::ostream &operator << (std::ostream &, const parameters &);
 
     struct subject {
         Symbol root;
         Diophant::parameters parameters;
 
-        subject (Symbol &x) : root {x}, parameters {} {}
-        subject (Symbol &x, const cross<pattern> &p) : root {x}, parameters {p} {}
-        subject (Symbol &x, stack<Expression>);
+        subject (Symbol &r, const Diophant::parameters &p = {}): root {r}, parameters {p} {}
 
         static subject read (Expression &);
     };
 
-    struct predicate {
-        Diophant::type type;
-        ptr<Diophant::function> function;
-
-        predicate (Type);
-        predicate (ptr<Diophant::function>);
-        predicate (Type, ptr<Diophant::function>);
-
-        // dummy function so that we can use maps.
-        // at the moment, we don't need this. 
-        bool operator == (const predicate &) const {
-            return true;
-        }
-    };
-
     std::ostream &operator << (std::ostream &, const subject &);
-    std::ostream &operator << (std::ostream &, const predicate &);
-
-    struct transformation {
-        Diophant::parameters Key;
-        Diophant::predicate Value;
-        
-        bool operator == (const transformation &t) const {
-            return Key == t.Key && Value == t.Value;
-        }
-    };
-
-    //std::partial_ordering operator <=> (const transformation &a, const transformation &b);
 
     struct Machine {
         Expression evaluate (Expression &, data::set<expressions::symbol> fixed);
 
-        void declare (const subject &, Type);
-        void define (const subject &, const predicate &);
+        void declare (const subject &);
+        void define (const subject &, Expression &);
 
         maybe<replacements> match (parameters &, Expression &) const;
         
@@ -69,23 +55,25 @@ namespace Diophant {
         }
         
         Machine ();
+        struct transformation;
+
         using overloads = stack<transformation>;
 
-        map<Symbol, overloads> definitions;
+        struct transformation {
+            Diophant::parameters key;
+            maybe<expression> value;
+
+            overloads more_specific;
+        };
+
+        std::map<Symbol, overloads> definitions;
     };
 
     std::ostream &operator << (std::ostream &, const Machine &);
-    
-    inline predicate::predicate (Type t) : type {t}, function {} {}
-    inline predicate::predicate (ptr<Diophant::function> e) : type {}, function {e} {}
-    inline predicate::predicate (Type t, ptr<Diophant::function> e) : type {t}, function {e} {}
-/*
-    std::partial_ordering inline operator <=> (const transformation &a, const transformation &b) {
-        return a.Key <=> b.Key;
-    }*/
 
     std::ostream inline &operator << (std::ostream &o, const parameters &p) {
-        for (const auto &e : p) e.write (o << " ", call_precedence);
+        for (const auto &e : p.params) e.write (o << " ", call_precedence);
+        if (p.such_that.get () != nullptr) o << " /; " << p.such_that;
         return o;
     }
 
