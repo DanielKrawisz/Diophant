@@ -59,17 +59,14 @@ namespace Diophant {
         auto pi = p.params.begin ();
         auto xi = x.begin ();
 
-        replacements r {};
+        replacements r {{}};
 
         while (pi != p.params.end ()) {
-            auto rr = match (*pi, *xi);
-            if (!bool (rr)) return {};
-            rr = combine (r, *rr);
-            if (!rr) return {};
-            r = *rr;
+            r = combine (r, match (*pi, *xi));
+            if (!bool (r)) return {};
         }
 
-        return replace (p.such_that, r);
+        return replace (p.such_that, *r);
     }
 
     maybe<replacements> match (const parameters &p, stack<Expression> x) {
@@ -127,35 +124,39 @@ namespace Diophant {
     const Machine::transformation *insert (Machine::overloads &o, const Machine::transformation &e) {
         stack<const Machine::transformation &> left;
         Machine::overloads right = o;
-
+        std::cout << "inserting definition " << e << std::endl;
         // flip through the stack
         while (data::size (right) > 0) {
             Machine::transformation &next = right.first ();
-
+            std::cout << " checking against definition " << next << std::endl;
             // we order by the number of parameters, naturally.
             if (e.key.params.size () > next.key.params.size ()) goto flip;
             if (e.key.params.size () < next.key.params.size ()) {
                 right << e;
                 break;
             }
+            
+            {
+                intuitionistic_partial_ordering o = e.key <=> next.key;
 
-            if (intuit are_equal = equal (e.key, next.key); are_equal == yes) {
-                if (!bool (next.value)) {
-                    *next.value = *e.value;
-                    return nullptr;
-                }
+                if (intuit are_equal = o.equal (); are_equal == yes) {
+                    if (!bool (next.value)) {
+                        *next.value = *e.value;
+                        return nullptr;
+                    }
 
-                // note: this operation is not sufficient since there
-                // could be vars with different names.
-                return next.value == e.value ? nullptr : &next;
-            } else if (are_equal == unknown) throw unknown_operation {};
+                    // note: this operation is not sufficient since there
+                    // could be vars with different names.
+                    return next.value == e.value ? nullptr : &next;
+                } else if (are_equal == unknown) throw exception {} << "cannot detect equality of " << e.key << " and " << next.key;
 
-            if (intuit is_sub = sub (e.key, next.key); is_sub == yes)
-                return insert (next.more_specific, e);
-            else if (is_sub == unknown) throw unknown_operation {};
+                if (intuit is_sub = o.left_castable; is_sub == yes)
+                    return insert (next.more_specific, e);
+                else if (is_sub == unknown) throw exception {} << "cannot detect sub of " << e.key << " and " << next.key;
 
-            if (intuit are_disjoint = disjoint (e.key, next.key); are_disjoint == no) return &next;
-            else if (are_disjoint == unknown) throw unknown_operation {};
+                if (intuit are_disjoint = o.disjoint; are_disjoint == no) return &next;
+                else if (are_disjoint == unknown) throw exception {} << "cannot detect disjoint of " << e.key << " and " << next.key;
+            }
 
             flip:
             left = data::prepend (left, next);
@@ -173,7 +174,7 @@ namespace Diophant {
         return nullptr;
     }
 
-    subject subject::read (Expression &x) {
+    subject Machine::make_subject (Expression &x) {
         auto p = x.get ();
         if (p == nullptr) goto fail;
 
@@ -200,13 +201,20 @@ namespace Diophant {
         }
 
         if (auto pst = dynamic_cast<const expressions::such_that *> (p); pst != nullptr) {
-            auto x = subject::read (pst->pattern);
+            auto x = make_subject (pst->pattern);
             x.parameters.such_that = pst->type;
             return x;
         }
 
-        if (auto pb = dynamic_cast<const expressions::binary_expression *> (p); pb != nullptr)
-            throw exception {} << "not yet implemented: define " << x;
+        if (auto pb = dynamic_cast<const expressions::binary_expression *> (p); pb != nullptr) {
+            auto v = registered.find (binary_operator (pb->op));
+            if (v == registered.end ()) throw exception {} << " unknown binary operator " << binary_operator (pb->op);
+            subject x (*v->second.get ());
+            x.parameters.params.resize (2);
+            x.parameters.params[0] = pb->left;
+            x.parameters.params[1] = pb->right;
+            return x;
+        }
 
         if (auto pu = dynamic_cast<const expressions::unary_expression *> (p); pu != nullptr)
             throw exception {} << "not yet implemented: define " << x;
@@ -245,7 +253,7 @@ namespace Diophant {
 
             // check for lambda
             if (auto fl = dynamic_cast<const expressions::lambda *> (f); fl != nullptr)
-                return Diophant::evaluate (replace (fl->body, {{fl->argument, arg}}), *this, fixed);
+                return Diophant::evaluate (replace (fl->body, {{{fl->argument, arg}}}), *this, fixed);
 
             stack<Expression> args {arg};
             Symbol *q = nullptr;
@@ -346,6 +354,43 @@ namespace Diophant {
         }
 
         return {};
+    }
+
+    intuit equal (const parameters &a, const parameters &b) {
+        if (a == b) return yes;
+        
+        return unknown;
+    }
+    
+    intuit disjoint (const parameters &a, const parameters &b) {
+        if (a == b) return no;
+        
+        return unknown;
+    }
+    
+    intuit sub (const parameters &a, const parameters &b) {
+        if (a == b) return yes;
+        
+        return unknown;
+    }
+    
+    bool parameters::operator == (const parameters &p) const {
+        if (params.size () != p.params.size ()) return false;
+        
+        auto ai = params.begin ();
+        auto bi = p.params.begin ();
+        
+        bidirectional_replacements mm {{{}}, {{}}};
+        
+        while (ai != params.end ()) {
+            mm = pattern_equal (*ai, *bi, mm);
+            if (!bool (mm)) return false;
+            ai++;
+            bi++;
+        }
+        
+        return replace (such_that, mm.left) == p.such_that && replace (p.such_that, mm.right) == such_that;
+        
     }
 
 }

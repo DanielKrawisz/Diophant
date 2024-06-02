@@ -19,21 +19,52 @@ namespace Diophant {
     struct type;
     using Type = const type;
 
-    bool operator == (Type &, Type &);
-
     std::ostream &operator << (std::ostream &, Type &);
 
     enum intuit : char {
-        no = 0,
+        unknown = 0,
         yes = 1,
-        unknown = -1
+        no = -1
     };
 
+    intuit operator ! (intuit);
     intuit operator && (intuit, intuit);
     intuit operator || (intuit, intuit);
+    
+    struct intuitionistic_partial_ordering {
+        intuit disjoint;
+        intuit left_castable;
+        intuit right_castable;
+        
+        intuit equal () const {
+            return right_castable && left_castable;
+        }
+        
+        intuit sub () const {
+            return left_castable && !right_castable;
+        }
+        
+        intuit super () const {
+            return right_castable && !left_castable;
+        }
+    };
 
     // thrown in the case of a cast that we don't know how to make.
-    struct unknown_operation : exception {};
+    struct unknown_operation : exception {
+        using exception::exception;
+    };
+
+    intuit inline operator ! (intuit x) {
+        return intuit (-char (x));
+    }
+    
+    intuit inline operator && (intuit a, intuit b) {
+        return std::max (a, b);
+    }
+    
+    intuit inline operator || (intuit a, intuit b) {
+        return std::min (a, b);
+    }
 
 }
 

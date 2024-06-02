@@ -16,10 +16,13 @@ namespace Diophant::expressions {
         bool operator == (const abstract &) const override;
         
         symbol (const std::string &x) : name {x} {}
+        
+        static bool normal (const std::string &name);
     };
     
     std::ostream inline &symbol::write (std::ostream &o) const {
-        return o << name;
+        if (normal (name)) return o << name;
+        return o << "`" << name << "`";
     }
     
     std::strong_ordering inline operator <=> (const Symbol &a, const Symbol &b) {

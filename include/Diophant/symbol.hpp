@@ -8,7 +8,8 @@ namespace Diophant::expressions {
 }
 
 namespace Diophant {
-    using Symbol = const expressions::symbol;
+    using symbol = expressions::symbol;
+    using Symbol = const symbol;
     using symbols = std::map<std::string, ptr<Symbol>>;
 }
 

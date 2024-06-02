@@ -14,7 +14,7 @@ namespace Diophant::expressions {
         static const ptr<const symbol> &make (const std::string &);
         
         std::ostream &write (std::ostream &o) const override {
-            return bool (name) ? o << "." << name : o << "_";
+            return bool (name) ? o << "_" << *name : o << "_";
         }
         
         var () : name {} {}

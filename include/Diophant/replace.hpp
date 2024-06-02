@@ -5,14 +5,15 @@
 #include <Diophant/expression.hpp>
 
 namespace Diophant {
-
-    struct pattern : expression {
-        pattern (Expression &ex) : expression {ex} {}
-        pattern () : expression {} {}
-    };
     
     using replacement = entry<Symbol, Expression>;
-    using replacements = map<Symbol, Expression>;
+    struct replacements : maybe<map<Symbol, Expression>> {
+        using maybe<map<Symbol, Expression>>::maybe;
+        replacements insert (Symbol &x, Expression &e) {
+            if (!bool (*this) || (*this)->contains (x)) return {};
+            return (*this)->insert (x, e);
+        }
+    };
     
     Expression replace (Expression, replacements);
     
@@ -27,4 +28,3 @@ namespace Diophant::make {
 }
 
 #endif
-

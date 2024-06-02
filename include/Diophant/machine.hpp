@@ -4,7 +4,7 @@
 #include <Diophant/evaluate.hpp>
 #include <Diophant/type.hpp>
 #include <Diophant/replace.hpp>
-#include <Diophant/expressions/symbol.hpp>
+#include <Diophant/pattern.hpp>
 #include <Diophant/expressions/apply.hpp>
 
 namespace Diophant {
@@ -21,12 +21,12 @@ namespace Diophant {
 
         parameters (): params {}, such_that {} {}
         parameters (stack<Expression> z, Type st = {});
+        
+        bool operator == (const parameters &) const;
 
     };
 
-    intuit equal (const parameters &, const parameters &);
-    intuit disjoint (const parameters &, const parameters &);
-    intuit sub (const parameters &, const parameters &);
+    intuitionistic_partial_ordering operator <=> (const parameters &, const parameters &);
 
     std::ostream &operator << (std::ostream &, const parameters &);
 
@@ -35,8 +35,6 @@ namespace Diophant {
         Diophant::parameters parameters;
 
         subject (Symbol &r, const Diophant::parameters &p = {}): root {r}, parameters {p} {}
-
-        static subject read (Expression &);
     };
 
     std::ostream &operator << (std::ostream &, const subject &);
@@ -64,21 +62,33 @@ namespace Diophant {
             maybe<expression> value;
 
             overloads more_specific;
+            
+            friend std::ostream &operator << (std::ostream &, const transformation &);
         };
 
         std::map<Symbol, overloads> definitions;
+
+        symbols registered {};
+        
+        subject make_subject (Expression &);
     };
 
     std::ostream &operator << (std::ostream &, const Machine &);
 
     std::ostream inline &operator << (std::ostream &o, const parameters &p) {
         for (const auto &e : p.params) e.write (o << " ", call_precedence);
-        if (p.such_that.get () != nullptr) o << " /; " << p.such_that;
+        if (p.such_that.get () != nullptr) o << " ? " << p.such_that;
         return o;
     }
 
     std::ostream inline &operator << (std::ostream &o, const subject &z) {
         return o << z.root << z.parameters;
+    }
+    
+    std::ostream inline &operator << (std::ostream &o, const Machine::transformation &t) {
+        o << t.key;
+        if (bool (t.value)) return o << " -> " << *t.value;
+        return o << ";";
     }
 
 }

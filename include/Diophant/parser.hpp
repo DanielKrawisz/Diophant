@@ -18,13 +18,6 @@ namespace Diophant {
 
         void initialize ();
 
-        // set of registered symbols.
-        symbols registered {};
-
-        // new symbols that are found within a command as it is being executed.
-        // added to registered symbols if the command is read successfully.
-        symbols new_symbols {};
-
         Machine machine {};
 
         data::stack<Expression> stack {};
@@ -36,6 +29,9 @@ namespace Diophant {
         void read_symbol (const data::string &in);
         void read_string (const data::string &in);
         void read_number (const data::string &in);
+        
+        void any ();
+        void var ();
 
         void open_list ();
         void open_object ();
@@ -67,6 +63,8 @@ namespace Diophant {
 
         void boolean_and ();
         void boolean_or ();
+        
+        void element ();
 
         void equal ();
         void unequal ();
@@ -82,7 +80,15 @@ namespace Diophant {
     };
     
     void inline Parser::read_symbol (const data::string &in) {
-        stack <<= make::symbol (in, new_symbols);
+        stack <<= make::symbol (in, machine.registered);
+    }
+    
+    void inline Parser::any () {
+        stack <<= make::any ();
+    }
+    
+    void inline Parser::var () {
+        stack = prepend (rest (stack), make::var (dynamic_cast<const expressions::symbol &> (*first (stack).get ())));
     }
 
     void inline Parser::read_string (const data::string &in) {
@@ -179,6 +185,10 @@ namespace Diophant {
 
     void inline Parser::such_that () {
         stack = prepend (rest (rest (stack)), make::such_that (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::element () {
+        stack = prepend (rest (rest (stack)), make::element (first (rest (stack)), first (stack)));
     }
 
     void inline Parser::call () {

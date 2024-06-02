@@ -7,25 +7,29 @@
 namespace Diophant::expressions {
     
     enum class binary_operand : byte {
-        PLUS = 30, 
-        MINUS = 40, 
-        TIMES = 50, 
-        POWER = 60, 
-        MOD = 63,
-        DIVMOD = 67,
-        DIVIDE = 70,
-        EQUAL = 80,
-        UNEQUAL = 81, 
-        GREATER_EQUAL = 82, 
-        LESS_EQUAL = 83, 
-        GREATER = 84, 
-        LESS = 85, 
-        BOOLEAN_AND = 90, 
-        BOOLEAN_OR = 100, 
-        DOUBLE_IMPLICATION = 130, 
-        INTUITIONISTIC_AND = 140, 
-        INTUITIONISTIC_OR = 150, 
-        INTUITIONISTIC_IMPLIES = 160
+        POW = 15,
+        TIMES = 20, 
+        POWER = 25, 
+        MOD = 30,
+        DIVMOD = 35,
+        DIVIDE = 40,
+        PLUS = 45, 
+        MINUS = 50, 
+        BOOL_EQUAL = 55,
+        BOOL_UNEQUAL = 60, 
+        GREATER_EQUAL = 65, 
+        LESS_EQUAL = 70, 
+        GREATER = 75, 
+        LESS = 80, 
+        BOOLEAN_AND = 85, 
+        BOOLEAN_OR = 90, 
+        ELEMENT = 95, 
+        EQUAL = 100,
+        UNEQUAL = 105, 
+        DOUBLE_IMPLICATION = 110, 
+        INTUITIONISTIC_AND = 115, 
+        INTUITIONISTIC_OR = 120, 
+        INTUITIONISTIC_IMPLIES = 125
     };
 
     constexpr uint32 binary_precedence (binary_operand X) {
@@ -41,14 +45,17 @@ namespace Diophant::expressions {
             case binary_operand::MOD : return "%";
             case binary_operand::DIVMOD : return "/%";
             case binary_operand::DIVIDE : return "/";
-            case binary_operand::EQUAL : return "==";
-            case binary_operand::UNEQUAL : return "!=";
+            case binary_operand::BOOL_EQUAL : return "==";
+            case binary_operand::BOOL_UNEQUAL : return "!=";
             case binary_operand::GREATER_EQUAL : return ">";
             case binary_operand::LESS_EQUAL : return "<=";
             case binary_operand::GREATER : return ">";
             case binary_operand::LESS : return "<";
             case binary_operand::BOOLEAN_AND : return "&&";
             case binary_operand::BOOLEAN_OR : return "||";
+            case binary_operand::EQUAL : return "=";
+            case binary_operand::UNEQUAL : return "/=";
+            case binary_operand::ELEMENT : return ":";
             case binary_operand::DOUBLE_IMPLICATION : return "<==>";
             case binary_operand::INTUITIONISTIC_AND : return "&";
             case binary_operand::INTUITIONISTIC_OR : return "|";
@@ -113,14 +120,14 @@ namespace Diophant::make {
         return binary_expression::make (binary_operand::DIVMOD, l, r);
     }
     
-    Expression inline equal (Expression &l, Expression &r) {
+    Expression inline bool_equal (Expression &l, Expression &r) {
         using namespace expressions;
-        return binary_expression::make (binary_operand::EQUAL, l, r);
+        return binary_expression::make (binary_operand::BOOL_EQUAL, l, r);
     }
     
-    Expression inline unequal (Expression &l, Expression &r) {
+    Expression inline bool_unequal (Expression &l, Expression &r) {
         using namespace expressions;
-        return binary_expression::make (binary_operand::UNEQUAL, l, r);
+        return binary_expression::make (binary_operand::BOOL_UNEQUAL, l, r);
     }
     
     Expression inline greater_equal (Expression &l, Expression &r) {
@@ -151,6 +158,21 @@ namespace Diophant::make {
     Expression inline boolean_or (Expression &l, Expression &r) {
         using namespace expressions;
         return binary_expression::make (binary_operand::BOOLEAN_OR, l, r);
+    }
+    
+    Expression inline equal (Expression &l, Expression &r) {
+        using namespace expressions;
+        return binary_expression::make (binary_operand::EQUAL, l, r);
+    }
+    
+    Expression inline unequal (Expression &l, Expression &r) {
+        using namespace expressions;
+        return binary_expression::make (binary_operand::UNEQUAL, l, r);
+    }
+    
+    Expression inline element (Expression &l, Expression &r) {
+        using namespace expressions;
+        return binary_expression::make (binary_operand::ELEMENT, l, r);
     }
     
     Expression inline double_implication (Expression &l, Expression &r) {

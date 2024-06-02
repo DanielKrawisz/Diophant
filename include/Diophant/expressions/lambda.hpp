@@ -28,7 +28,7 @@ namespace Diophant::expressions {
     std::istream &operator >> (std::istream &i, lambda &l);
     
     Expression inline lambda::operator () (Expression x) const {
-        return replace (body, {{argument, x}});
+        return replace (body, {{{argument, x}}});
     }
 
     bool inline lambda::operator == (const abstract &x) const {

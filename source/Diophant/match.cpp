@@ -6,34 +6,34 @@
 #include <Diophant/expressions/unary.hpp>
 #include <Diophant/expressions/apply.hpp>
 #include <Diophant/expressions/lambda.hpp>
+#include <data/io/unimplemented.hpp>
 
 namespace Diophant {
 
-    maybe<replacements> combine (maybe<replacements> x, maybe<replacements> y) {
-        if (!x || !y) return {};
+    replacements combine (replacements x, replacements y) {
+        if (!bool (x) || !bool (y)) return {};
 
-        replacements r = *x;
+        replacements r = x;
         for (const auto &n : *y) {
-            auto v = r.contains (n.Key);
-            if (!v) r = r.insert (n);
-            else if (v && *v != n.Value) return {};
+            r = r.insert (n.Key, n.Value);
+            if (!bool (r)) break;
         }
 
         return r;
     }
 
-    maybe<replacements> match (Pattern &p, Expression &e, data::set<expressions::symbol> fixed) {
+    replacements match (Pattern &p, Expression &e, replacements prior, data::set<expressions::symbol> fixed) {
         const auto pat = p.get ();
         const auto exp = e.get ();
 
         if (const auto pt = dynamic_cast<const expressions::var *> (pat); pt != nullptr)
-            return (bool (pt->name)) ? replacements {{*pt->name, e}} : replacements {};
+            return (bool (pt->name)) ? prior.insert (*pt->name, e) : replacements {};
 
         if (const auto pst = dynamic_cast<const expressions::such_that *> (pat); pst != nullptr) {
-            auto r = match (pst->pattern, e, fixed);
+            auto r = match (pst->pattern, e, prior, fixed);
             if (! bool (r)) return {};
 
-            intuit cx = constructable (replace (pst->type, *r));
+            intuit cx = constructable (replace (pst->type, r));
             if (cx == yes) return r;
             else if (cx == no) return {};
             throw unknown_cast {e, p};
@@ -42,60 +42,58 @@ namespace Diophant {
         if (const auto pc = dynamic_cast<const expressions::call *> (pat); pc != nullptr) {
             const auto ec = dynamic_cast<const expressions::call *> (exp);
             if (ec != nullptr) return {};
-            return combine (match (pc->function, ec->function, fixed), match (pc->argument, ec->argument, fixed));
+            return match (pc->argument, ec->argument, match (pc->function, ec->function, prior, fixed), fixed);
         }
 
         if (const auto pl = dynamic_cast<const expressions::list *> (pat); pl != nullptr) {
             const auto el = dynamic_cast<const expressions::list *> (exp);
             if (el != nullptr) return {};
             if (el->val.size () != pl->val.size ()) return {};
-            replacements r;
+            
             auto pli = pl->val.begin ();
             auto eli = el->val.begin ();
 
             while (pli != pl->val.end ()) {
-                auto rr = combine (r, match (*pli, *eli, fixed));
-                if (!rr) return {};
-                r = *rr;
+                prior = match (*pli, *eli, prior, fixed);
+                if (!bool (prior)) return {};
                 pli++;
                 eli++;
             }
 
-            return r;
+            return prior;
         }
 
         if (const auto pm = dynamic_cast<const expressions::map *> (pat); pm != nullptr) {
             const auto em = dynamic_cast<const expressions::map *> (exp);
             if (em != nullptr) return {};
             if (em->val.size () != pm->val.size ()) return {};
-            replacements r;
+            
             auto pmi = pm->val.begin ();
             auto emi = em->val.begin ();
 
             while (pmi != pm->val.end ()) {
                 if ((*pmi).Key != (*emi).Key) return {};
-                auto rr = combine (r, match ((*pmi).Value, (*emi).Value, fixed));
-                if (!rr) return {};
-                r = *rr;
+                prior = match ((*pmi).Value, (*emi).Value, prior, fixed);
+                if (!bool (prior)) return {};
                 pmi++;
                 emi++;
             }
 
-            return r;
+            return prior;
         }
 
         if (const auto pb = dynamic_cast<const expressions::binary_expression *> (pat); pb != nullptr) {
             const auto eb = dynamic_cast<const expressions::binary_expression *> (exp);
             if (eb != nullptr) return {};
             if (pb->op != eb->op) return {};
-            return combine (match (pb->left, eb->left, fixed), match (pb->right, eb->right, fixed));
+            return match (pb->right, eb->right, match (pb->left, eb->left, prior, fixed), fixed);
         }
 
         if (const auto pu = dynamic_cast<const expressions::unary_expression *> (pat); pu != nullptr) {
             const auto eu = dynamic_cast<const expressions::unary_expression *> (exp);
             if (eu != nullptr) return {};
             if (pu->op != eu->op) return {};
-            return match (pu->expression, eu->expression, fixed);
+            return match (pu->expression, eu->expression, prior, fixed);
         }
 
         if (const auto pl = dynamic_cast<const expressions::lambda *> (pat); pl != nullptr) {
@@ -104,8 +102,12 @@ namespace Diophant {
             throw exception {} << "I haven't done this part yet";
         }
 
-        return static_cast<Expression &> (p) == e ? maybe<replacements> {replacements {}} : maybe<replacements> {};
+        return static_cast<Expression &> (p) == e ? replacements {{}} : replacements {};
         
+    }
+    
+    intuit constructable (Type &) {
+        throw method::unimplemented {"constructable"};
     }
     
 }

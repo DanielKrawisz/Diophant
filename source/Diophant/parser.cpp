@@ -35,11 +35,16 @@ namespace parse {
         one<'"'>,                                             // opening "
             string_body,
         one<'"'>> {};                                         // closing "
-
+    
     // symbols are alpha characters followed by _ and alphanumeric.
+    struct normal_symbol : seq<alpha, star<sor<alnum, one<'_'>>>> {};
+    
     // you can also have a symbol that's `any string inside these`. 
-    struct symbol : sor<seq<alpha, star<sor<alnum, one<'_'>>>>, seq<one<'`'>, 
-        star<seq<not_at<one<'`'>>, sor<seq<string<'\\', '`'>>, ascii::print>>>, one<'`'>>> {};
+    struct abnormal_symbol : seq<one<'`'>, star<seq<not_at<one<'`'>>, sor<seq<string<'\\', '`'>>, ascii::print>>>, one<'`'>> {};
+
+    struct symbol : sor<normal_symbol, abnormal_symbol> {};
+
+    struct var : seq<one<'_'>, opt<symbol>> {};
 
     struct expression;
     struct statement;
@@ -60,8 +65,6 @@ namespace parse {
     struct close_paren : one<')'> {};
 
     struct parenthetical : seq<open_paren, ws, expression, ws, close_paren> {};
-
-    struct var : seq<one<'.'>, ws, opt<symbol>> {};
     
     struct open_list : one<'['> {};
     struct close_list : one<']'> {};
@@ -74,10 +77,11 @@ namespace parse {
     
     struct structure : sor<number_lit, string_lit, symbol, var, let, parenthetical, list, dstruct, lambda> {};
 
-    struct call : seq<structure, opt<star<plus<white>, structure>>> {};
+    struct call : seq<plus<white>, structure> {};
+    struct call_expr : seq<structure, star<call>> {};
 
     struct unary_operator : sor<one<'-'>, one<'!'>, one<'~'>, one<'+'>, one<'*'>> {};
-    struct unary_expr : seq<star<unary_operator>, call> {};
+    struct unary_expr : seq<star<unary_operator>, call_expr> {};
 
     struct pow_expr;
     struct mul_expr;
@@ -108,7 +112,7 @@ namespace parse {
     struct less_equal_op : seq<ws, string<'<','='>, ws, comp_expr> {};
     struct greater_op : seq<ws, one<'>'>, ws, comp_expr> {};
     struct less_op : seq<ws, one<'<'>, ws, comp_expr> {};
-
+    
     struct comp_expr : seq<add_expr,
         opt<sor<greater_equal_op, less_equal_op, greater_op, less_op>>> {};
 
@@ -117,8 +121,8 @@ namespace parse {
     struct bool_equal_op : seq<ws, string<'=','='>, ws, bool_equal_expr> {};
     struct bool_unequal_op : seq<ws, string<'!','='>, ws, bool_equal_expr> {};
 
-    struct bool_equal_expr : seq<comp_expr,
-        opt<sor<bool_equal_op, bool_unequal_op>>> {};
+    struct bool_equal_expr : seq<comp_expr, opt<sor<bool_equal_op, bool_equal_op>>> {};
+    struct bool_unequal_expr : seq<bool_equal_expr, opt<sor<bool_equal_op, bool_unequal_op>>> {};
 
     struct bool_and_expr;
     struct bool_or_expr;
@@ -126,8 +130,11 @@ namespace parse {
     struct bool_and_op : seq<ws, string<'&','&'>, ws, bool_and_expr> {};
     struct bool_or_op : seq<ws, string<'|','|'>, ws, bool_or_expr> {};
 
-    struct bool_and_expr : seq<comp_expr, opt<bool_and_op>> {};
+    struct bool_and_expr : seq<bool_unequal_expr, opt<bool_and_op>> {};
     struct bool_or_expr : seq<bool_and_expr, opt<bool_or_op>> {};
+
+    struct element_op : seq<ws, one<':'>, ws, bool_or_expr> {};
+    struct element_expr : seq<bool_or_expr, opt<element_op>> {};
     
     struct equal_expr;
     struct unequal_expr;
@@ -137,10 +144,9 @@ namespace parse {
     struct unequal_op : seq<ws, string<'/', '='>, ws, unequal_expr> {};
     struct double_implication_op : seq<ws, string<'<','=','=','>'>, ws, double_implication_expr> {};
     
-    struct equal_expr : seq<bool_or_expr, opt<equal_op>> {};
-    struct double_implication_expr : seq<equal_expr, opt<double_implication_op>> {};
-
-    struct is_expr : seq<bool_or_expr, opt<seq<ws, one<':'>, ws, double_implication_expr>>> {};
+    struct equal_expr : seq<element_expr, opt<equal_op>> {};
+    struct unequal_expr : seq<equal_expr, opt<unequal_op>> {};
+    struct double_implication_expr : seq<unequal_expr, opt<double_implication_op>> {};
     
     struct intuitionistic_and_expr;
     struct intuitionistic_or_expr;
@@ -149,7 +155,7 @@ namespace parse {
     struct intuitionistic_or_op : seq<ws, one<'|'>, ws, intuitionistic_or_expr> {};
     struct intuitionistic_implies_op : seq<ws, string<'=','>'>, ws, expression> {};
 
-    struct intuitionistic_and_expr : seq<is_expr, opt<intuitionistic_and_op>> {};
+    struct intuitionistic_and_expr : seq<double_implication_expr, opt<intuitionistic_and_op>> {};
     struct intuitionistic_or_expr : seq<intuitionistic_and_expr, opt<intuitionistic_or_op>> {};
     struct intuitionistic_implies_expr : seq<intuitionistic_or_expr, opt<intuitionistic_implies_op>> {};
     struct cast_expr : seq<intuitionistic_implies_expr, opt<seq<ws, string<'#'>, ws, intuitionistic_implies_expr>>> {};
@@ -157,10 +163,10 @@ namespace parse {
     
     struct parse_expression : seq<expression, eof> {};
 
-    struct such_that : seq<ws, string<'?'>, ws, intuitionistic_implies_expr> {};
+    struct such_that_op : seq<ws, string<'?'>, ws, intuitionistic_implies_expr> {};
     struct set : seq<string<'-', '>'>, ws, expression> {};
 
-    struct statement : seq<expression, opt<ws, such_that>, opt<ws, set>> {};
+    struct statement : seq<expression, opt<ws, such_that_op>, opt<ws, set>> {};
 
     struct program : seq<statement, opt<seq<ws, one<';'>, statement>>, eof> {};
 }
@@ -173,6 +179,7 @@ namespace Diophant {
     template <> struct eval_action<parse::number_lit> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
+            std::cout << " read number lit " << string_view {in.begin (), in.end () - in.begin ()} << std::endl; 
             eval.read_number (in.string ());
         }
     };
@@ -184,10 +191,28 @@ namespace Diophant {
         }
     };
 
-    template <> struct eval_action<parse::symbol> {
+    template <> struct eval_action<parse::normal_symbol> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
+            std::cout << " read symbol " << string_view {in.begin (), in.end () - in.begin ()} << std::endl; 
             eval.read_symbol (in.string ());
+        }
+    };
+
+    template <> struct eval_action<parse::abnormal_symbol> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            std::cout << " read symbol " << string_view {in.begin (), in.end () - in.begin ()} << std::endl; 
+            eval.read_symbol (in.string ());
+        }
+    };
+
+    template <> struct eval_action<parse::var> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            std::cout << " read var " << string_view {in.begin (), in.end () - in.begin ()} << std::endl; 
+            if (in.size () == 1) eval.any ();
+            eval.var ();
         }
     };
 
@@ -352,9 +377,18 @@ namespace Diophant {
         }
     };
 
-    template <> struct eval_action<parse::such_that> {
+    template <> struct eval_action<parse::element_op> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
+            std::cout << " reading element op \"" << string_view {in.begin (), in.end () - in.begin ()} << "\"" << std::endl;
+            eval.element ();
+        }
+    };
+
+    template <> struct eval_action<parse::such_that_op> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            std::cout << " read such that op \"" << string_view {in.begin (), in.end () - in.begin ()} << "\"" << std::endl;
             eval.such_that ();
         }
     };
@@ -362,6 +396,7 @@ namespace Diophant {
     template <> struct eval_action<parse::set> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
+            std::cout << " read set \"" << string_view {in.begin (), in.end () - in.begin ()} << "\"" << std::endl;
             eval.set ();
         }
     };
@@ -369,11 +404,11 @@ namespace Diophant {
     template <> struct eval_action<parse::program> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
+            std::cout << " about to evaluate program " << string_view {in.begin (), in.end () - in.begin ()} << std::endl; 
             if (data::size (eval.stack) >= 1) {
                 auto v = evaluate (eval.stack.first (), eval.machine);
                 eval.write (v);
                 eval.stack = data::stack<Expression> {};
-                eval.registered = eval.new_symbols;
             }
         }
     };
@@ -389,6 +424,7 @@ namespace Diophant {
     };
 
     void Parser::read_line (const std::string &in) {
+        std::cout << "read line \"" << in << "\"" << std::endl;
         tao::pegtl::parse<parse::program, Diophant::eval_action> (tao::pegtl::memory_input<> {in, "expression"}, *this);
     }
 
@@ -397,25 +433,65 @@ namespace Diophant {
     }
 
     void Parser::initialize () {
-        read_line (R"(.x == .x ? x:Value -> true; )");
-        read_line (R"(.x == .y ? x:Value & y:Value -> false; )");
+        make::symbol ("Impossible", machine.registered);
+        make::symbol ("Null", machine.registered);
+        make::symbol ("Bool", machine.registered);
+        make::symbol ("Intuit", machine.registered);
+        make::symbol ("Sign", machine.registered);
+        make::symbol ("N", machine.registered);
+        make::symbol ("Z", machine.registered);
+        make::symbol ("Q", machine.registered);
+        make::symbol ("Float", machine.registered);
+        make::symbol ("String", machine.registered);
+        make::symbol ("Int", machine.registered);
+        make::symbol ("Uint", machine.registered);
+        make::symbol ("List", machine.registered);
+        make::symbol ("Tupple", machine.registered);
+        make::symbol ("Struct", machine.registered);
+        make::symbol ("Array", machine.registered);
+        make::symbol ("!l", machine.registered);
+        make::symbol ("!r", machine.registered);
+        make::symbol ("++l", machine.registered);
+        make::symbol ("--l", machine.registered);
+        make::symbol ("^", machine.registered);
+        make::symbol ("*", machine.registered);
+        make::symbol ("%", machine.registered);
+        make::symbol ("/", machine.registered);
+        make::symbol ("/%", machine.registered);
+        make::symbol ("<", machine.registered);
+        make::symbol (">", machine.registered);
+        make::symbol ("<=", machine.registered);
+        make::symbol (">=", machine.registered);
+        make::symbol ("==", machine.registered);
+        make::symbol ("!=", machine.registered);
+        make::symbol ("&&", machine.registered);
+        make::symbol ("||", machine.registered);
+        make::symbol ("=", machine.registered);
+        make::symbol ("/=", machine.registered);
+        make::symbol ("<==>", machine.registered);
+        make::symbol (":", machine.registered);
+        make::symbol ("&", machine.registered);
+        make::symbol ("|", machine.registered);
+        
+        read_line (R"(_x == _x ? x:Value -> true; )");
+        read_line (R"(_x == _y ? x:Value & y:Value -> false; )");
         read_line (R"(not true -> false; )");
         read_line (R"(not false -> true; )");
-        read_line (R"(!.x ? x:Bool -> not; )");
-        read_line (R"(.x != .y ? x:Value & y:Value -> !(x == y); )");
+        read_line (R"(!_x ? x:Bool -> not; )");
+        read_line (R"(_x != _y ? x:Value & y:Value -> !(x == y); )");
         read_line (R"(and true true -> true; )");
-        read_line (R"(and .x .y ? x:Bool & y:Bool -> false; )");
+        read_line (R"(and _x _y ? x:Bool & y:Bool -> false; )");
         read_line (R"(or false false -> false; )");
-        read_line (R"(or .x .y ? x:Bool & y:Bool -> false; )");
-        read_line (R"(xor .x .y ? x:Bool & y:Bool -> `!=`; )");
-        read_line (R"(implies .x .y ? x:Bool & y:Bool -> or y !x; )");
+        read_line (R"(or _x _y ? x:Bool & y:Bool -> false; )");
+        read_line (R"(xor _x _y ? x:Bool & y:Bool -> `!=`; )");
+        read_line (R"(implies _x _y ? x:Bool & y:Bool -> or y !x; )");
         read_line (R"(nand true true -> false; )");
-        read_line (R"(nand .x .y ? x:Bool y:Bool -> true; )");
+        read_line (R"(nand _x _y ? x:Bool y:Bool -> true; )");
         read_line (R"(nor false false -> true; )");
-        read_line (R"(nor .x .y ? x:Bool & y:Bool -> false; )");
+        read_line (R"(nor _x _y ? x:Bool & y:Bool -> false; )");
         read_line (R"(`&&` -> Bool => Bool => Bool # and; )");
         read_line (R"(`||` -> Bool => Bool => Bool # or; )");
-        read_line (R"(.x : Nonzero .n -> x : N & x != 0 )");
+        read_line (R"(_x : Nonzero _n -> x : N & x != 0 )");
         read_line (R"(+N -> Nonzero N; )");
         read_line (R"(`++` ? `++` : N => +N; )");
         read_line (R"(`--` ? `--` : +N => N; )");
@@ -477,7 +553,7 @@ namespace Diophant {
     }
     
     void Parser::set () {
-        machine.define (subject::read (first (rest (stack))), first (stack));
+        machine.define (machine.make_subject (first (rest (stack))), first (stack));
         stack = prepend (rest (rest (stack)), first (stack));
     }
 }

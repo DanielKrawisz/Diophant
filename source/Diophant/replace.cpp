@@ -9,8 +9,7 @@
 
 namespace Diophant {
     
-    Expression replace (Expression x, replacements r) {
-
+    Expression zplace (Expression x, map<Symbol, Expression> r) {
         auto p = x.get ();
         if (p == nullptr) return x;
 
@@ -21,23 +20,23 @@ namespace Diophant {
         }
         
         if (auto pc = static_cast<const expressions::call *> (p); pc != nullptr) {
-            auto fun = replace (pc->function, r);
-            auto arg = replace (pc->argument, r);
+            auto fun = zplace (pc->function, r);
+            auto arg = zplace (pc->argument, r);
 
             if (fun == pc->function && arg == pc->argument) return x;
             return make::call (fun, arg);
         }
         
         if (auto pb = static_cast<const expressions::binary_expression *> (p); pb != nullptr) {
-            auto left = replace (pb->left, r);
-            auto right = replace (pb->right, r);
+            auto left = zplace (pb->left, r);
+            auto right = zplace (pb->right, r);
 
             return left == pb->left && right == pb->right ? x : expressions::binary_expression::make (pb->op, left, right);
         }
         
         if (auto pu = static_cast<const expressions::unary_expression *> (p);pu != nullptr) {
             std::cout << " testing u" << std::endl;
-            auto expr = replace (pu->expression, r);
+            auto expr = zplace (pu->expression, r);
 
             return expr == pu->expression ? x : expressions::unary_expression::make (pu->op, expr);
         }
@@ -46,7 +45,7 @@ namespace Diophant {
             stack<Expression> evaluated;
             bool changed = false;
             for (Expression &e : pz->val) {
-                Expression ex = replace (e, r);
+                Expression ex = zplace (e, r);
                 if (ex != e) changed = true;
                 evaluated <<= ex;
             }
@@ -58,7 +57,7 @@ namespace Diophant {
             stack<entry<Expression, Expression>> evaluated;
             bool changed = false;
             for (const entry<Expression, Expression> &e : pm->val) {
-                Expression ex = replace (e.Value, r);
+                Expression ex = zplace (e.Value, r);
                 if (ex != e.Value) changed = true;
                 evaluated <<= entry<Expression, Expression> {e.Key, ex};
             }
@@ -67,5 +66,11 @@ namespace Diophant {
         }
 
         return x;
+    }
+    
+    Expression replace (Expression x, replacements r) {
+        if (!bool (r)) return x;
+
+        return zplace (x, *r);
     }
 }

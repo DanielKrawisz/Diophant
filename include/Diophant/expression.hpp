@@ -84,6 +84,8 @@ namespace Diophant::make {
     Expression intuitionistic_and (Expression &, Expression &);
     Expression intuitionistic_or (Expression &, Expression &);
     Expression intuitionistic_implies (Expression &, Expression &);
+    
+    Expression element (Expression &, Expression &);
 
 }
 

@@ -12,14 +12,17 @@
 namespace Diophant {
     
     void test_case (const string &program, bool valid = true) {
-        
-        Parser eval {[] (Expression &x) {}};
+        std::cout << "test parse " << program << std::endl;
+        Parser *eval {nullptr};
+        EXPECT_NO_THROW (eval = new Parser {[] (Expression &x) {}});
         
         if (valid) {
-            EXPECT_NO_THROW (eval.read_line (program));
+            EXPECT_NO_THROW (eval->read_line (program));
         } else {
-            EXPECT_ANY_THROW (eval.read_line (program));
+            EXPECT_ANY_THROW (eval->read_line (program));
         }
+        
+        delete eval;
     }
     
     TEST (ParseTest, TestParse) {
@@ -28,7 +31,7 @@ namespace Diophant {
         test_case ("n := 3; n");
         test_case ("a b c");
         test_case (
-            "/* this is a list of numbers */"
+            "/< this is a list of numbers >/"
             "[1, 2, 3]");
         test_case ("a b c");
         test_case (R"("a string")");
