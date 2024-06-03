@@ -356,41 +356,36 @@ namespace Diophant {
         return {};
     }
 
-    intuit equal (const parameters &a, const parameters &b) {
-        if (a == b) return yes;
+    intuitionistic_partial_ordering operator <=> (const parameters &a, const parameters &b) {
+        if (a.params.size () != b.params.size ()) return {yes, no, no};
         
-        return unknown;
-    }
-    
-    intuit disjoint (const parameters &a, const parameters &b) {
-        if (a == b) return no;
-        
-        return unknown;
-    }
-    
-    intuit sub (const parameters &a, const parameters &b) {
-        if (a == b) return yes;
-        
-        return unknown;
-    }
-    
-    bool parameters::operator == (const parameters &p) const {
-        if (params.size () != p.params.size ()) return false;
-        
-        auto ai = params.begin ();
-        auto bi = p.params.begin ();
+        auto ai = a.params.begin ();
+        auto bi = b.params.begin ();
         
         bidirectional_replacements mm {{{}}, {{}}};
         
-        while (ai != params.end ()) {
-            mm = pattern_equal (*ai, *bi, mm);
-            if (!bool (mm)) return false;
+        while (ai != a.params.end ()) {
+            mm = compare (*ai, *bi, mm);
             ai++;
             bi++;
         }
         
-        return replace (such_that, mm.left) == p.such_that && replace (p.such_that, mm.right) == such_that;
+        // if neither set of parameters can be replaced into each other, 
+        // then the two patterns are disjoint. 
+        if (!bool (mm.left) && !bool (mm.right)) return {yes, no, no};
         
+        if (bool (mm.left) && bool (mm.right)) 
+            return compare (replace (a.such_that, mm.left), b.such_that);
+        
+        if (bool (mm.left)) {
+            auto x = compare (replace (a.such_that, mm.left), b.such_that);
+            x.right_castable = no;
+            return x;
+        }
+        
+        auto x = compare (a.such_that, replace (b.such_that, mm.right));
+        x.left_castable = no;
+        return x;
     }
 
 }

@@ -9,8 +9,6 @@ namespace Diophant {
 
     struct pattern;
     using Pattern = const pattern;
-
-    intuitionistic_partial_ordering operator <=> (Pattern &, Pattern &);
     
     std::ostream &operator << (std::ostream &, Pattern &);
 
@@ -29,9 +27,11 @@ namespace Diophant {
         operator bool () const {
             return bool (left) && bool (right);
         }
+        
+        operator std::partial_ordering () const;
     };
     
-    bidirectional_replacements pattern_equal (Pattern &, Pattern &, bidirectional_replacements = {{{}}, {{}}}, 
+    bidirectional_replacements compare (Pattern &, Pattern &, bidirectional_replacements = {{{}}, {{}}}, 
         data::set<expressions::symbol> fixed_left = {}, data::set<expressions::symbol> fixed_right = {});
 
 }
@@ -46,10 +46,6 @@ namespace Diophant {
 
     std::ostream inline &operator << (std::ostream &o, Pattern &p) {
         return o << static_cast<Expression &> (p);
-    }
-
-    bool inline operator == (Pattern &a, Pattern &b) {
-        return bool (pattern_equal (a, b));
     }
 
 }

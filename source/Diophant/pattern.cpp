@@ -4,7 +4,7 @@
 
 namespace Diophant {
     
-    bidirectional_replacements pattern_equal (Pattern &a, Pattern &b, bidirectional_replacements br, 
+    bidirectional_replacements compare (Pattern &a, Pattern &b, bidirectional_replacements br, 
         data::set<expressions::symbol> fixed_left, data::set<expressions::symbol> fixed_right) {
         
         return bidirectional_replacements {

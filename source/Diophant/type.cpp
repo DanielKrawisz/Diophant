@@ -70,7 +70,7 @@ namespace Diophant {
         return unknown;
     }
     /*
-    intuitionistic_partial_ordering operator <=> (Type &a, Type &b) {
+    intuitionistic_partial_ordering compare (Type &a, Type &b) {
         // if they are equal, 
         
         // A | B is bigger than A 

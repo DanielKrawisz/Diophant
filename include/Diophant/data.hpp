@@ -47,6 +47,22 @@ namespace Diophant {
         intuit super () const {
             return right_castable && !left_castable;
         }
+        
+        intuitionistic_partial_ordering (intuit d, intuit l, intuit r): disjoint {d}, left_castable {l}, right_castable {r} {}
+        
+        intuitionistic_partial_ordering (std::partial_ordering p) {
+            if (p == std::partial_ordering::unordered) {
+                *this = {yes, no, no};
+                return;
+            } else if (p == std::partial_ordering::greater) {
+                *this = {no, yes, no};
+                return;
+            } else if (p == std::partial_ordering::less) {
+                *this = {no, no, yes};
+                return;
+            } else if (p == std::partial_ordering::equivalent) 
+                *this = {no, yes, yes};
+        }
     };
 
     // thrown in the case of a cast that we don't know how to make.

@@ -11,7 +11,7 @@ namespace Diophant {
     
     intuit cast (Type, Expression);
 
-    intuitionistic_partial_ordering operator <=> (Type &, Type &);
+    intuitionistic_partial_ordering compare (Type &, Type &);
     
     struct type : expression {
         type (Expression &e) : expression {e} {}
