@@ -7,32 +7,36 @@
 
 namespace Diophant::expressions {
     
-    enum class unary_operand {
-        NOT, 
-        NEGATE, 
-        PLUS
+    enum class left_unary_operand : char {
+        NOT = '!', 
+        NEGATE = '-', 
+        PLUS = '+',
+        TILDE = '~',
+        STAR = '*'
     };
     
-    constexpr const char *unary_operator (unary_operand X) {
+    constexpr const char *left_unary_operator (left_unary_operand X) {
         switch (X) {
-            case unary_operand::NOT : return "!";
-            case unary_operand::NEGATE : return "-";
-            case unary_operand::PLUS : return "+";
-            default: throw exception {} << "can't get here";
+            case left_unary_operand::NOT : return "!";
+            case left_unary_operand::NEGATE : return "-";
+            case left_unary_operand::PLUS : return "+";
+            case left_unary_operand::TILDE : return "~";
+            case left_unary_operand::STAR : return "*";
+            default: throw exception {} << "Attempt to create left unary operand " << char (X);
         }
     }
     
-    struct unary_expression final : abstract {
+    struct left_unary_expression final : abstract {
         
         uint32 precedence () const override {
             return 200;
         }
         
-        unary_operand op;
+        left_unary_operand op;
         Expression expression;
-        unary_expression (unary_operand o, Expression &x) : op {o}, expression {x} {}
+        left_unary_expression (left_unary_operand o, Expression &x) : op {o}, expression {x} {}
         
-        static Expression make (unary_operand o, Expression &);
+        static Expression make (left_unary_operand o, Expression &);
         
         std::ostream &write (std::ostream &) const override;
 
@@ -43,32 +47,32 @@ namespace Diophant::expressions {
 namespace Diophant::make {
     
     Expression inline boolean_not (Expression &x) {
-        return expressions::unary_expression::make (expressions::unary_operand::NOT, x);
+        return expressions::left_unary_expression::make (expressions::left_unary_operand::NOT, x);
     }
     
     Expression inline negate (Expression &x) {
-        return expressions::unary_expression::make (expressions::unary_operand::NEGATE, x);
+        return expressions::left_unary_expression::make (expressions::left_unary_operand::NEGATE, x);
     }
 
     Expression inline plus (Expression &x) {
-        return expressions::unary_expression::make (expressions::unary_operand::PLUS, x);
+        return expressions::left_unary_expression::make (expressions::left_unary_operand::PLUS, x);
     }
     
 }
 
 namespace Diophant::expressions {
     
-    Expression inline unary_expression::make (unary_operand op, Expression &x) {
-        return Diophant::expression {std::static_pointer_cast<const abstract> (std::make_shared<unary_expression> (op, x))};
+    Expression inline left_unary_expression::make (left_unary_operand op, Expression &x) {
+        return Diophant::expression {std::static_pointer_cast<const abstract> (std::make_shared<left_unary_expression> (op, x))};
     }
     
-    std::ostream inline &unary_expression::write (std::ostream &o) const {
-        return expression->write (o << unary_operator (op) << " ");
+    std::ostream inline &left_unary_expression::write (std::ostream &o) const {
+        return expression->write (o << left_unary_operator (op) << " ");
     }
 
-    bool inline unary_expression::operator == (const abstract &a) const {
+    bool inline left_unary_expression::operator == (const abstract &a) const {
         try {
-            return expression == dynamic_cast<const unary_expression &> (a).expression;
+            return expression == dynamic_cast<const left_unary_expression &> (a).expression;
         } catch (std::bad_cast) {
             return false;
         }

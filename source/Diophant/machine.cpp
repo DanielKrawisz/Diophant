@@ -71,21 +71,22 @@ namespace Diophant {
 
     maybe<replacements> match (const parameters &p, stack<Expression> x) {
         if (p.params.size () != data::size (x)) return {};
+        
+        /*
         auto c = condition (p, x);
         if (!bool (c)) return {};
 
         intuit cx = constructable (*c);
 
         if (cx == no) return {};
-        if (cx == unknown) throw unknown_construction {p.such_that};
+        if (cx == unknown) throw unknown_construction {p.such_that};*/
 
-        replacements r;
+        replacements r {{}};
         int i = 0;
         
         for (Expression &e : x) {
-            auto rr = combine (r, match (p.params[i], e));
-            if (!rr) return {};
-            r = *rr;
+            r = combine (r, match (p.params[i], e));
+            if (!r) return {};
         }
         
         return {r};
@@ -99,12 +100,12 @@ namespace Diophant {
         //
         auto v = m.definitions.find (z.root);
         if (v == m.definitions.end ()) {
-            Machine::overloads o {{Machine::transformation {z.parameters, x}}};
+            Machine::overloads o {{Machine::transformation {z.parameters, x, false}}};
             m.definitions[z.root] = o;
             return;
         }
 
-        auto w = insert (v->second, Machine::transformation {z.parameters, x});
+        auto w = insert (v->second, Machine::transformation {z.parameters, x, false});
         if (!w) return;
         throw exception {} << "conflicting definition " << subject {z.root, w->key} << w->value;
     }
@@ -124,11 +125,11 @@ namespace Diophant {
     const Machine::transformation *insert (Machine::overloads &o, const Machine::transformation &e) {
         stack<const Machine::transformation &> left;
         Machine::overloads right = o;
-        std::cout << "inserting definition " << e << std::endl;
+        
         // flip through the stack
         while (data::size (right) > 0) {
             Machine::transformation &next = right.first ();
-            std::cout << " checking against definition " << next << std::endl;
+            
             // we order by the number of parameters, naturally.
             if (e.key.params.size () > next.key.params.size ()) goto flip;
             if (e.key.params.size () < next.key.params.size ()) {
@@ -216,7 +217,7 @@ namespace Diophant {
             return x;
         }
 
-        if (auto pu = dynamic_cast<const expressions::unary_expression *> (p); pu != nullptr)
+        if (auto pu = dynamic_cast<const expressions::left_unary_expression *> (p); pu != nullptr)
             throw exception {} << "not yet implemented: define " << x;
 
         fail:
@@ -327,10 +328,10 @@ namespace Diophant {
             return left == pb->left && right == pb->right ? x : expressions::binary_expression::make (pb->op, left, right);
         }
 
-        if (auto pu = dynamic_cast<const expressions::unary_expression *> (p); pu != nullptr) {
+        if (auto pu = dynamic_cast<const expressions::left_unary_expression *> (p); pu != nullptr) {
             auto expr = evaluate (pu->expression, m, fixed);
             // TODO check definitions
-            return expr == pu->expression ? x : expressions::unary_expression::make (pu->op, expr);
+            return expr == pu->expression ? x : expressions::left_unary_expression::make (pu->op, expr);
         }
 
         return x;
@@ -345,7 +346,7 @@ namespace Diophant {
         for (const auto &e : o) {
             if (e.key.params.size () > x.size ()) return {};
             if (e.key.params.size () < x.size ()) continue;
-
+            
             auto r = match (e.key, x);
             if (!r) continue;
 

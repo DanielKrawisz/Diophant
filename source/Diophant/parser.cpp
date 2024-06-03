@@ -58,7 +58,7 @@ namespace parse {
         string<'t', 'h', 'e', 'n'>, not_at<ascii::print>, ws, expression, ws,
         string<'e', 'l', 's', 'e'>, not_at<ascii::print>, ws, expression> {};
 
-    struct lambda : seq<one<'@'>, ws, symbol, ws, string<'-','>'>, ws, expression> {};
+    struct lambda : seq<one<'@'>, ws, plus<seq<symbol, ws>>, string<'-','>'>, ws, expression> {};
 
     // parentheses are only used to group expressions
     struct open_paren : one<'('> {};
@@ -80,8 +80,10 @@ namespace parse {
     struct call : seq<plus<white>, structure> {};
     struct call_expr : seq<structure, star<call>> {};
 
+    struct unary_expr;
     struct unary_operator : sor<one<'-'>, one<'!'>, one<'~'>, one<'+'>, one<'*'>> {};
-    struct unary_expr : seq<star<unary_operator>, call_expr> {};
+    struct unary_operation : seq<unary_operator, unary_expr> {};
+    struct unary_expr : sor<unary_operation, call_expr> {};
 
     struct pow_expr;
     struct mul_expr;
@@ -150,25 +152,30 @@ namespace parse {
     
     struct intuitionistic_and_expr;
     struct intuitionistic_or_expr;
+    struct intuitionistic_implies_expr;
 
     struct intuitionistic_and_op : seq<ws, one<'&'>, ws, intuitionistic_and_expr> {};
     struct intuitionistic_or_op : seq<ws, one<'|'>, ws, intuitionistic_or_expr> {};
-    struct intuitionistic_implies_op : seq<ws, string<'=','>'>, ws, expression> {};
+    struct intuitionistic_implies_op : seq<ws, string<'=','>'>, ws, intuitionistic_implies_expr> {};
 
     struct intuitionistic_and_expr : seq<double_implication_expr, opt<intuitionistic_and_op>> {};
     struct intuitionistic_or_expr : seq<intuitionistic_and_expr, opt<intuitionistic_or_op>> {};
     struct intuitionistic_implies_expr : seq<intuitionistic_or_expr, opt<intuitionistic_implies_op>> {};
-    struct cast_expr : seq<intuitionistic_implies_expr, opt<seq<ws, string<'#'>, ws, intuitionistic_implies_expr>>> {};
+    
+    struct such_that_expr;
+    struct such_that_op : seq<ws, string<'?'>, ws, such_that_expr> {};
+    struct such_that_expr : seq<intuitionistic_implies_expr, opt<such_that_op>> {};
+    struct cast_expr : seq<such_that_expr, opt<seq<ws, string<'#'>, ws, intuitionistic_implies_expr>>> {};
     struct expression : cast_expr {};
     
-    struct parse_expression : seq<expression, eof> {};
+    struct parse_expression : seq<ws, expression, ws, eof> {};
 
-    struct such_that_op : seq<ws, string<'?'>, ws, intuitionistic_implies_expr> {};
     struct set : seq<string<'-', '>'>, ws, expression> {};
+    struct def : seq<string<':', '='>, ws, expression> {};
 
-    struct statement : seq<expression, opt<ws, such_that_op>, opt<ws, set>> {};
+    struct statement : seq<ws, expression, ws, sor<set, def>, one<';'>> {};
 
-    struct program : seq<statement, opt<seq<ws, one<';'>, statement>>, eof> {};
+    struct program : seq<star<statement>, ws, expression, ws, eof> {};
 }
 
 namespace Diophant {
@@ -179,7 +186,6 @@ namespace Diophant {
     template <> struct eval_action<parse::number_lit> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            std::cout << " read number lit " << string_view {in.begin (), in.end () - in.begin ()} << std::endl; 
             eval.read_number (in.string ());
         }
     };
@@ -194,7 +200,6 @@ namespace Diophant {
     template <> struct eval_action<parse::normal_symbol> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            std::cout << " read symbol " << string_view {in.begin (), in.end () - in.begin ()} << std::endl; 
             eval.read_symbol (in.string ());
         }
     };
@@ -202,7 +207,6 @@ namespace Diophant {
     template <> struct eval_action<parse::abnormal_symbol> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            std::cout << " read symbol " << string_view {in.begin (), in.end () - in.begin ()} << std::endl; 
             eval.read_symbol (in.string ());
         }
     };
@@ -210,16 +214,8 @@ namespace Diophant {
     template <> struct eval_action<parse::var> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            std::cout << " read var " << string_view {in.begin (), in.end () - in.begin ()} << std::endl; 
             if (in.size () == 1) eval.any ();
             eval.var ();
-        }
-    };
-
-    template <> struct eval_action<parse::call> {
-        template <typename Input>
-        static void apply (const Input &in, Parser &eval) {
-            eval.call ();
         }
     };
 
@@ -241,6 +237,21 @@ namespace Diophant {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.lambda ();
+        }
+    };
+
+    template <> struct eval_action<parse::call> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.call ();
+        }
+    };
+
+    template <> struct eval_action<parse::unary_operation> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            // NOTE this won't work if we ever have any unary operators that are bigger than one char. 
+            eval.unary (*in.begin ());
         }
     };
 
@@ -380,7 +391,6 @@ namespace Diophant {
     template <> struct eval_action<parse::element_op> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            std::cout << " reading element op \"" << string_view {in.begin (), in.end () - in.begin ()} << "\"" << std::endl;
             eval.element ();
         }
     };
@@ -388,7 +398,6 @@ namespace Diophant {
     template <> struct eval_action<parse::such_that_op> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            std::cout << " read such that op \"" << string_view {in.begin (), in.end () - in.begin ()} << "\"" << std::endl;
             eval.such_that ();
         }
     };
@@ -396,15 +405,20 @@ namespace Diophant {
     template <> struct eval_action<parse::set> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            std::cout << " read set \"" << string_view {in.begin (), in.end () - in.begin ()} << "\"" << std::endl;
             eval.set ();
+        }
+    };
+
+    template <> struct eval_action<parse::def> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.def ();
         }
     };
 
     template <> struct eval_action<parse::program> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            std::cout << " about to evaluate program " << string_view {in.begin (), in.end () - in.begin ()} << std::endl; 
             if (data::size (eval.stack) >= 1) {
                 auto v = evaluate (eval.stack.first (), eval.machine);
                 eval.write (v);
@@ -424,12 +438,13 @@ namespace Diophant {
     };
 
     void Parser::read_line (const std::string &in) {
-        std::cout << "read line \"" << in << "\"" << std::endl;
-        tao::pegtl::parse<parse::program, Diophant::eval_action> (tao::pegtl::memory_input<> {in, "expression"}, *this);
+        if (!tao::pegtl::parse<parse::program, Diophant::eval_action> (tao::pegtl::memory_input<> {in, "expression"}, *this))
+            throw exception {} << "could not parse line \"" << in << "\"";
     }
 
     void Parser::read_expression (const std::string &in) {
-        tao::pegtl::parse<parse::parse_expression, Diophant::eval_action> (tao::pegtl::memory_input<> {in, "expression"}, *this);
+        if (!tao::pegtl::parse<parse::parse_expression, Diophant::eval_action> (tao::pegtl::memory_input<> {in, "expression"}, *this))
+            throw exception {} << "could not parse expression \"" << in << "\"";
     }
 
     void Parser::initialize () {
@@ -472,7 +487,7 @@ namespace Diophant {
         make::symbol (":", machine.registered);
         make::symbol ("&", machine.registered);
         make::symbol ("|", machine.registered);
-        
+        /*
         read_line (R"(_x == _x ? x:Value -> true; )");
         read_line (R"(_x == _y ? x:Value & y:Value -> false; )");
         read_line (R"(not true -> false; )");
@@ -490,7 +505,25 @@ namespace Diophant {
         read_line (R"(nor false false -> true; )");
         read_line (R"(nor _x _y ? x:Bool & y:Bool -> false; )");
         read_line (R"(`&&` -> Bool => Bool => Bool # and; )");
-        read_line (R"(`||` -> Bool => Bool => Bool # or; )");
+        read_line (R"(`||` -> Bool => Bool => Bool # or; )");*/
+        /*
+        read_line (R"(`=` ? (@ a -> a = a) & (@ a b -> a = b => b = a) & (@ a b c -> a = b & b = c => a = c); ");
+        read_line (R"(Natural _N _S -> 
+            /< zero is a natural number >/
+            0 : N & 
+            /< the successor of a natural number is a natural number. >/
+            (@ x -> x : N <==> (S n) : N) & 
+            /< in peano's original version, there were 3 axioms about equality
+               that are automatically handled by the = sign already. >/
+            /< natural numbers are closed under equality. >/
+            (@ x y -> x : N => x == y => y : N)
+            /< successors of equal natural numbers are equal. >/
+            (@ x y -> x : N => y : N => x == y <==> S x == S y) & 
+            /< 0 is the successor of no natural number. >/
+            (@ x -> S x == 0 => Impossible) & 
+            /< induction >/
+            (@ P n -> replace P n 0 => (P => replace P n (S n)) => @ x -> replace P n x); )");
+
         read_line (R"(_x : Nonzero _n -> x : N & x != 0 )");
         read_line (R"(+N -> Nonzero N; )");
         read_line (R"(`++` ? `++` : N => +N; )");
@@ -517,7 +550,7 @@ namespace Diophant {
         read_line (R"(`<=` ? `<=` : Q => Q => Bool; )");
         read_line (R"(prepend ? prepend : Stack x => x => Stack x; )");
         read_line (R"(first ? first : Stack x => x | Null; )");
-        read_line (R"(rest ? rest : Stack x => Stack x; )");
+        read_line (R"(rest ? rest : Stack x => Stack x; )");*/
         
         // TODO fill in the missing functions
 
@@ -552,8 +585,15 @@ namespace Diophant {
         back = rest (back);
     }
     
+    void Parser::unary (char op) {
+        stack = prepend (rest (stack), 
+            expressions::left_unary_expression::make (expressions::left_unary_operand {op}, first (stack)));
+    }
+    
     void Parser::set () {
         machine.define (machine.make_subject (first (rest (stack))), first (stack));
         stack = prepend (rest (rest (stack)), first (stack));
     }
+    
+    void Parser::def () {}
 }

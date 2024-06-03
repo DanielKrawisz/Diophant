@@ -60,6 +60,7 @@ namespace Diophant {
         struct transformation {
             Diophant::parameters key;
             maybe<expression> value;
+            bool locked;
 
             overloads more_specific;
             

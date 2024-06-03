@@ -69,15 +69,17 @@ namespace Diophant {
         
         return unknown;
     }
-    /*
+    
     intuitionistic_partial_ordering compare (Type &a, Type &b) {
-        // if they are equal, 
+        // if they are the same expression we can provide an answer. 
+        if (static_cast<Expression> (a) == static_cast<Expression> (b)) return {no, yes, yes};
+        return {unknown, unknown, unknown};
         
         // A | B is bigger than A 
         
         // A & B is smaller than A
         
         // A | B => C is bigger than A => C 
-    }*/
+    }
 
 }

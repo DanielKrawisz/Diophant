@@ -25,6 +25,8 @@ namespace Diophant {
         data::stack<data::stack<Expression>> back {};
 
         handler<Expression &> write;
+        
+        void define (string &, Expression &);
 
         void read_symbol (const data::string &in);
         void read_string (const data::string &in);
@@ -41,6 +43,8 @@ namespace Diophant {
         void lambda ();
 
         void call ();
+        
+        void unary (char op);
 
         void negate ();
         void boolean_not ();
@@ -77,6 +81,7 @@ namespace Diophant {
         void such_that ();
         
         void set ();
+        void def ();
     };
     
     void inline Parser::read_symbol (const data::string &in) {

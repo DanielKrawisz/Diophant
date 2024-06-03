@@ -15,6 +15,7 @@ namespace Diophant {
     struct pattern : expression {
         pattern (Expression &ex) : expression {ex} {}
         pattern () : expression {} {}
+        pattern (const string &x): expression {} {} 
     };
     
     struct bidirectional_replacements {

@@ -34,11 +34,11 @@ namespace Diophant {
             return left == pb->left && right == pb->right ? x : expressions::binary_expression::make (pb->op, left, right);
         }
         
-        if (auto pu = static_cast<const expressions::unary_expression *> (p);pu != nullptr) {
+        if (auto pu = static_cast<const expressions::left_unary_expression *> (p);pu != nullptr) {
             std::cout << " testing u" << std::endl;
             auto expr = zplace (pu->expression, r);
 
-            return expr == pu->expression ? x : expressions::unary_expression::make (pu->op, expr);
+            return expr == pu->expression ? x : expressions::left_unary_expression::make (pu->op, expr);
         }
         
         if (auto pz = dynamic_cast<const expressions::list *> (p); pz != nullptr) {

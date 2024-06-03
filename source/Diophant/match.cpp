@@ -89,8 +89,8 @@ namespace Diophant {
             return match (pb->right, eb->right, match (pb->left, eb->left, prior, fixed), fixed);
         }
 
-        if (const auto pu = dynamic_cast<const expressions::unary_expression *> (pat); pu != nullptr) {
-            const auto eu = dynamic_cast<const expressions::unary_expression *> (exp);
+        if (const auto pu = dynamic_cast<const expressions::left_unary_expression *> (pat); pu != nullptr) {
+            const auto eu = dynamic_cast<const expressions::left_unary_expression *> (exp);
             if (eu != nullptr) return {};
             if (pu->op != eu->op) return {};
             return match (pu->expression, eu->expression, prior, fixed);
