@@ -25,17 +25,14 @@ namespace Diophant::expressions {
         return o << "`" << name << "`";
     }
     
-    std::strong_ordering inline operator <=> (const Symbol &a, const Symbol &b) {
+    std::strong_ordering inline operator <=> (const symbol &a, const symbol &b) {
         return a.name <=> b.name;
     }
     
-    bool inline operator == (const Symbol &a, const Symbol &b) {
+    bool inline operator == (const symbol &a, const symbol &b) {
         return a.name == b.name;
     }
     
-}
-
-namespace Diophant::expressions {
     bool inline symbol::operator == (const abstract &a) const {
         try {
             return name == dynamic_cast<const symbol &> (a).name;
@@ -44,8 +41,22 @@ namespace Diophant::expressions {
         }
     }
 
-    std::ostream inline &operator << (std::ostream &o, Symbol x) {
+    std::ostream inline &operator << (std::ostream &o, symbol x) {
         return o << x.name;
+    }
+}
+
+namespace Diophant {
+    std::ostream inline &operator << (std::ostream &o, Symbol x) {
+        return o << *x;
+    }
+    
+    std::strong_ordering inline operator <=> (Symbol a, Symbol b) {
+        return *a <=> *b;
+    }
+    
+    bool inline operator == (Symbol a, Symbol b) {
+        return a.get () == b.get () ? true : a.get () == nullptr || b.get () == nullptr ? false : *a == *b;
     }
 }
 

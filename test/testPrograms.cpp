@@ -11,17 +11,19 @@
 
 namespace Diophant {
     
-    void test_case (const string& expected, const string &program) {
+    void values_test_case (const string &expected, const string &program) {
         value result;
         EXPECT_NO_THROW (result = run (program));
-        EXPECT_EQ (value {expected}, result) << "expected program " << program << " to evaluate to " << expected << " but got " << result;
+        value expected_result {expected};
+        EXPECT_TRUE (expected_result.valid ());
+        EXPECT_EQ (expected_result, result) << "expected program " << program << " to evaluate to " << expected << " but got " << result;
     }
     
-    TEST (ProgramTest, TestPrograms) {
-        test_case ("1", "1");
-        test_case ("1", "(@ x -> x) 1");
-        test_case ("[1, 2, 3]", "[1, 2, 3]");
-        test_case ("3", "n -> 3; n");
+    TEST (ProgramTest, TestValue) {
+        values_test_case ("1", "1");
+        values_test_case ("1", "(@ x -> x) 1");
+        values_test_case ("[1, 2, 3]", "[1, 2, 3]");
+        values_test_case ("3", "n -> 3; n");
         /*
         test_case ("false", "!true");
         test_case ("true", "!false");
@@ -35,6 +37,18 @@ namespace Diophant {
         test_case ("false", "1 < 2");*/
         //test_case ("13", "fib 0 = 0; fib 1 = 1; fib x:N = fib (x - 1) + fib (x - 2)")
     }
+    /*
+    void program_test_case (const string &expected, const string &program) {
+        std::cout << "testing program " << program << std::endl;
+        expression result;
+        Machine m;
+        EXPECT_NO_THROW (result = evaluate (expression {program}, m));
+        EXPECT_EQ (expression {expected}, result) << "expected program " << program << " to evaluate to " << expected << " but got " << result;
+    }
+    
+    TEST (ProgramTest, TestEvaluate) {
+        program_test_case ("(@ x -> x)", "(@ x -> x x) (@ x -> x)");
+    }*/
 
 }
 

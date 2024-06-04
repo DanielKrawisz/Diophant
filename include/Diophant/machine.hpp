@@ -67,7 +67,7 @@ namespace Diophant {
             friend std::ostream &operator << (std::ostream &, const transformation &);
         };
 
-        std::map<Symbol, overloads> definitions;
+        std::map<expressions::symbol, overloads> definitions;
 
         symbols registered {};
         

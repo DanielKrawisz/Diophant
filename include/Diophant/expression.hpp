@@ -50,7 +50,7 @@ namespace Diophant::make {
     Expression string (const data::string &str);
     Expression list (data::stack<Expression> ls);
     Expression map (data::stack<data::entry<Expression, Expression>> x);
-    Expression lambda (Symbol &, Expression &);
+    Expression lambda (stack<Symbol>, Expression &);
 
     Expression call (Expression &, Expression &);
 

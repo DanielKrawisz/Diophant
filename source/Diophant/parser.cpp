@@ -57,8 +57,10 @@ namespace parse {
     struct dif : seq<string<'i', 'f'>, not_at<ascii::print>, ws, expression, ws,
         string<'t', 'h', 'e', 'n'>, not_at<ascii::print>, ws, expression, ws,
         string<'e', 'l', 's', 'e'>, not_at<ascii::print>, ws, expression> {};
-
-    struct lambda : seq<one<'@'>, ws, plus<seq<symbol, ws>>, string<'-','>'>, ws, expression> {};
+    
+    struct lambda_start : one<'@'> {};
+    struct lambda_arrow : string<'-','>'> {};
+    struct lambda : seq<lambda_start, ws, plus<seq<symbol, ws>>, lambda_arrow, ws, expression> {};
 
     // parentheses are only used to group expressions
     struct open_paren : one<'('> {};
@@ -230,6 +232,20 @@ namespace Diophant {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.close_list ();
+        }
+    };
+
+    template <> struct eval_action<parse::lambda_start> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.start_vars ();
+        }
+    };
+
+    template <> struct eval_action<parse::lambda_arrow> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.end_vars ();
         }
     };
 
@@ -557,10 +573,8 @@ namespace Diophant {
     }
 
     void Parser::lambda () {
-        Expression &x = first (rest (stack));
-        auto z = dynamic_cast<Symbol *> (x.get ());
-        if (z == nullptr) throw exception {} << "expected symbol, found " << x;
-        stack = prepend (rest (rest (stack)), make::lambda (*z, first (stack)));
+        stack = prepend (rest (stack), make::lambda (vars, first (stack)));
+        vars = {};
     }
 
     void Parser::open_list () {

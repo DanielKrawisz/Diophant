@@ -9,17 +9,16 @@
 
 namespace Diophant {
     
-    Expression zplace (Expression x, map<Symbol, Expression> r) {
-        auto p = x.get ();
-        if (p == nullptr) return x;
+    Expression zplace (Expression x, map<expressions::symbol, Expression> r) {
+        if (x.get () == nullptr) return x;
 
-        if (auto px = static_cast<const expressions::symbol *> (p); px != nullptr) {
+        if (auto px = std::dynamic_pointer_cast<const expressions::symbol> (x); px != nullptr) {
             auto e = r.contains (*px);
             if (!e) return x;
             return *e;
         }
         
-        if (auto pc = static_cast<const expressions::call *> (p); pc != nullptr) {
+        if (auto pc = std::dynamic_pointer_cast<const expressions::call> (x); pc != nullptr) {
             auto fun = zplace (pc->function, r);
             auto arg = zplace (pc->argument, r);
 
@@ -27,21 +26,20 @@ namespace Diophant {
             return make::call (fun, arg);
         }
         
-        if (auto pb = static_cast<const expressions::binary_expression *> (p); pb != nullptr) {
+        if (auto pb = std::dynamic_pointer_cast<const expressions::binary_expression> (x); pb != nullptr) {
             auto left = zplace (pb->left, r);
             auto right = zplace (pb->right, r);
 
             return left == pb->left && right == pb->right ? x : expressions::binary_expression::make (pb->op, left, right);
         }
         
-        if (auto pu = static_cast<const expressions::left_unary_expression *> (p);pu != nullptr) {
-            std::cout << " testing u" << std::endl;
+        if (auto pu = std::dynamic_pointer_cast<const expressions::left_unary_expression> (x);pu != nullptr) {
             auto expr = zplace (pu->expression, r);
 
             return expr == pu->expression ? x : expressions::left_unary_expression::make (pu->op, expr);
         }
         
-        if (auto pz = dynamic_cast<const expressions::list *> (p); pz != nullptr) {
+        if (auto pz = std::dynamic_pointer_cast<const expressions::list> (x); pz != nullptr) {
             stack<Expression> evaluated;
             bool changed = false;
             for (Expression &e : pz->val) {
@@ -53,7 +51,7 @@ namespace Diophant {
             return changed ? make::list (evaluated) : x;
         }
         
-        if (auto pm = dynamic_cast<const expressions::map *> (p); pm != nullptr) {
+        if (auto pm = std::dynamic_pointer_cast<const expressions::map> (x); pm != nullptr) {
             stack<entry<Expression, Expression>> evaluated;
             bool changed = false;
             for (const entry<Expression, Expression> &e : pm->val) {

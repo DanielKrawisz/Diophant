@@ -24,7 +24,8 @@ namespace Diophant {
         }
         
         if (auto b = dynamic_cast<const expressions::lambda *> (x); b != nullptr) {
-            return valid_value (b->body, free.insert (b->argument));
+            for (auto x : b->arguments) free = free.insert (*x);
+            return valid_value (b->body, free);
         }
         
         if (auto b = dynamic_cast<const expressions::symbol *> (x); b != nullptr)

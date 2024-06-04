@@ -98,10 +98,10 @@ namespace Diophant {
 
     void def (const subject &z, maybe<Expression> x, Machine &m) {
         //
-        auto v = m.definitions.find (z.root);
+        auto v = m.definitions.find (*z.root);
         if (v == m.definitions.end ()) {
             Machine::overloads o {{Machine::transformation {z.parameters, x, false}}};
-            m.definitions[z.root] = o;
+            m.definitions[*z.root] = o;
             return;
         }
 
@@ -176,22 +176,20 @@ namespace Diophant {
     }
 
     subject Machine::make_subject (Expression &x) {
-        auto p = x.get ();
-        if (p == nullptr) goto fail;
+        if (x.get () == nullptr) goto fail;
 
-        if (auto px = dynamic_cast<Symbol *> (p); px != nullptr)
-            return subject (*px);
+        if (auto px = std::dynamic_pointer_cast<const expressions::symbol> (x); px != nullptr)
+            return subject (px);
 
-        if (auto pc = dynamic_cast<const expressions::call *> (p); pc != nullptr) {
+        if (auto pc = std::dynamic_pointer_cast<const expressions::call> (x); pc != nullptr) {
             expression fun = pc->function;
             stack<Expression> arguments {pc->argument};
 
             while (true) {
-                const auto *f = fun.get ();
-                if (const auto *fx = dynamic_cast<Symbol *> (f); bool (fx))
-                    return subject {*fx, arguments};
+                if (const auto fx = std::dynamic_pointer_cast<const expressions::symbol> (fun); bool (fx))
+                    return subject {fx, arguments};
 
-                if (const auto *fc = dynamic_cast<const expressions::call *> (f); bool (fc)) {
+                if (const auto fc = std::dynamic_pointer_cast<const expressions::call> (fun); bool (fc)) {
                     fun = fc->function;
                     arguments <<= fc->argument;
                     continue;
@@ -201,23 +199,23 @@ namespace Diophant {
             }
         }
 
-        if (auto pst = dynamic_cast<const expressions::such_that *> (p); pst != nullptr) {
+        if (auto pst = std::dynamic_pointer_cast<const expressions::such_that> (x); pst != nullptr) {
             auto x = make_subject (pst->pattern);
             x.parameters.such_that = pst->type;
             return x;
         }
 
-        if (auto pb = dynamic_cast<const expressions::binary_expression *> (p); pb != nullptr) {
+        if (auto pb = std::dynamic_pointer_cast<const expressions::binary_expression> (x); pb != nullptr) {
             auto v = registered.find (binary_operator (pb->op));
             if (v == registered.end ()) throw exception {} << " unknown binary operator " << binary_operator (pb->op);
-            subject x (*v->second.get ());
+            subject x (v->second);
             x.parameters.params.resize (2);
             x.parameters.params[0] = pb->left;
             x.parameters.params[1] = pb->right;
             return x;
         }
 
-        if (auto pu = dynamic_cast<const expressions::left_unary_expression *> (p); pu != nullptr)
+        if (auto pu = std::dynamic_pointer_cast<const expressions::left_unary_expression> (x); pu != nullptr)
             throw exception {} << "not yet implemented: define " << x;
 
         fail:
@@ -231,7 +229,6 @@ namespace Diophant {
     // the first step is to evaluate parts of the expression that require looking up
     // definitions in the machine. That means symbols and calls.
     Expression Machine::evaluate (Expression &x, data::set<expressions::symbol> fixed) {
-
         auto p = x.get ();
         if (p == nullptr) return x;
 
@@ -245,30 +242,32 @@ namespace Diophant {
         }
 
         if (auto pc = dynamic_cast<const expressions::call *> (p); pc != nullptr) {
-
             // first evaluate function and argument.
             expression fun = Diophant::evaluate (pc->function, *this, fixed);
             expression arg = Diophant::evaluate (pc->argument, *this, fixed);
 
-            auto f = fun.get ();
-
-            // check for lambda
-            if (auto fl = dynamic_cast<const expressions::lambda *> (f); fl != nullptr)
-                return Diophant::evaluate (replace (fl->body, {{{fl->argument, arg}}}), *this, fixed);
-
             stack<Expression> args {arg};
-            Symbol *q = nullptr;
+            symbol q = nullptr;
 
             while (true) {
+                // check for lambda
+                if (auto l = std::dynamic_pointer_cast<const expressions::lambda> (fun); l != nullptr) {
+                    fun = (*l) (data::first (args));
+                    args = data::rest (args);
+                    if (data::size (args) == 0) {
+                        return Diophant::evaluate (fun, *this, fixed);
+                    }
+                }
+                
                 // check for symbol
-                if (q = dynamic_cast<const expressions::symbol *> (f); q != nullptr) {
+                if (q = std::dynamic_pointer_cast<const expressions::symbol> (fun); q != nullptr) {
                     if (fixed.contains (*q)) goto end_call;
                     break;
                 }
 
                 // check for call
-                if (auto fc = dynamic_cast<const expressions::call *> (f); fc != nullptr) {
-                    f = fc->function.get ();
+                if (auto fc = std::dynamic_pointer_cast<const expressions::call> (fun); fc != nullptr) {
+                    fun = fc->function;
                     args <<= Diophant::evaluate (fc->argument, *this, fixed);
                     continue;
                 }

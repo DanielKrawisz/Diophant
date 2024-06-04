@@ -9,16 +9,14 @@
 namespace Diophant::expressions {
     
     struct var final: abstract {
-        maybe<symbol> name;
-        
-        static const ptr<const symbol> &make (const std::string &);
+        Symbol name;
         
         std::ostream &write (std::ostream &o) const override {
             return bool (name) ? o << "_" << *name : o << "_";
         }
         
-        var () : name {} {}
-        var (const symbol &x) : name {x} {}
+        var () : name {nullptr} {}
+        var (const Symbol &x) : name {x} {}
 
         bool operator == (const abstract &) const override;
         

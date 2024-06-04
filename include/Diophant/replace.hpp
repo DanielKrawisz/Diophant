@@ -6,10 +6,10 @@
 
 namespace Diophant {
     
-    using replacement = entry<Symbol, Expression>;
-    struct replacements : maybe<map<Symbol, Expression>> {
-        using maybe<map<Symbol, Expression>>::maybe;
-        replacements insert (Symbol &x, Expression &e) {
+    using replacement = entry<expressions::symbol, Expression>;
+    struct replacements : maybe<map<expressions::symbol, Expression>> {
+        using maybe<map<expressions::symbol, Expression>>::maybe;
+        replacements insert (const expressions::symbol &x, Expression &e) {
             if (!bool (*this) || (*this)->contains (x)) return {};
             return (*this)->insert (x, e);
         }

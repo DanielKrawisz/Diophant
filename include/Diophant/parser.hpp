@@ -23,6 +23,9 @@ namespace Diophant {
         data::stack<Expression> stack {};
 
         data::stack<data::stack<Expression>> back {};
+        
+        data::stack<Symbol> vars {};
+        bool reading_lambda_vars {false};
 
         handler<Expression &> write;
         
@@ -40,6 +43,8 @@ namespace Diophant {
         void close_list ();
         void close_object ();
 
+        void start_vars ();
+        void end_vars ();
         void lambda ();
 
         void call ();
@@ -85,7 +90,8 @@ namespace Diophant {
     };
     
     void inline Parser::read_symbol (const data::string &in) {
-        stack <<= make::symbol (in, machine.registered);
+        if (reading_lambda_vars) vars <<= expressions::symbol::make (in, machine.registered);
+        else stack <<= make::symbol (in, machine.registered);
     }
     
     void inline Parser::any () {
@@ -93,7 +99,7 @@ namespace Diophant {
     }
     
     void inline Parser::var () {
-        stack = prepend (rest (stack), make::var (dynamic_cast<const expressions::symbol &> (*first (stack).get ())));
+        stack = prepend (rest (stack), make::var (std::dynamic_pointer_cast<const expressions::symbol> (first (stack))));
     }
 
     void inline Parser::read_string (const data::string &in) {
@@ -198,6 +204,14 @@ namespace Diophant {
 
     void inline Parser::call () {
         stack = prepend (rest (rest (stack)), make::call (first (rest (stack)), first (stack)));
+    }
+
+    void inline Parser::start_vars () {
+        reading_lambda_vars = true;
+    }
+
+    void inline Parser::end_vars () {
+        reading_lambda_vars = false;
     }
 }
 
