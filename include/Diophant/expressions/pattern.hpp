@@ -21,6 +21,16 @@ namespace Diophant::expressions {
         bool operator == (const abstract &) const override;
         
     };
+    
+    struct typed final : abstract {
+        Type type;
+        
+        std::ostream &write (std::ostream &o) const override {
+            return o << "/[" << type << "]/";
+        }
+        
+        bool operator == (const abstract &) const override;
+    };
 
     struct such_that final : abstract {
         Pattern pattern;

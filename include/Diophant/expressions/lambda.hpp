@@ -5,6 +5,7 @@
 #include <Diophant/expression.hpp>
 #include <Diophant/expressions/symbol.hpp>
 #include <Diophant/replace.hpp>
+#include <Diophant/make.hpp>
 
 namespace Diophant::expressions {
     

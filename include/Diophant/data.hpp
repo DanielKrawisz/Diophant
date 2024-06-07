@@ -4,6 +4,7 @@
 #include <data/tools.hpp>
 #include <data/numbers.hpp>
 #include <data/math.hpp>
+#include <data/either.hpp>
 
 namespace Diophant {
     using namespace data;

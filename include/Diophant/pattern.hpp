@@ -34,6 +34,8 @@ namespace Diophant {
     
     bidirectional_replacements compare (Pattern &, Pattern &, bidirectional_replacements = {{{}}, {{}}}, 
         data::set<expressions::symbol> fixed_left = {}, data::set<expressions::symbol> fixed_right = {});
+    
+    Pattern evaluate (Pattern &, Machine &, data::set<expressions::symbol> fixed = {});
 
 }
 

@@ -20,11 +20,17 @@ namespace Diophant {
 
     std::ostream &print (std::ostream &o, Machine::overloads v, int ind);
 
-    std::ostream &print (std::ostream &o, Machine::transformation v, int ind) {
+    std::ostream &print (std::ostream &o, Machine::definition v, int ind) {
         o << v.key;
-        if (bool (v.value)) o << " -> " << v.value;
+        if (bool (v.value)) o << " := " << *v.value;
+        else o << ";";
+        
         if (v.more_specific.size () != 0) return print (o << " // ", v.more_specific, ind + 1);
-        return o << ";";
+        return o;
+    }
+    
+    std::ostream inline &operator << (std::ostream &o, const Machine::definition &t) {
+        return print (o, t, 0);
     }
 
     std::ostream &print (std::ostream &o, Machine::overloads v, int ind) {
@@ -94,18 +100,18 @@ namespace Diophant {
 
     // return the conflicting entry if there is one.
     // will not modify the overloads if there is a conflict.
-    const Machine::transformation *insert (Machine::overloads &o, const Machine::transformation &e);
+    const Machine::definition *insert (Machine::overloads &o, const Machine::definition &e);
 
-    void def (const subject &z, maybe<Expression> x, Machine &m) {
+    void def (const subject &z, maybe<expression> x, Machine &m) {
         //
         auto v = m.definitions.find (*z.root);
         if (v == m.definitions.end ()) {
-            Machine::overloads o {{Machine::transformation {z.parameters, x, false}}};
+            Machine::overloads o {{Machine::definition {z.parameters, x}}};
             m.definitions[*z.root] = o;
             return;
         }
 
-        auto w = insert (v->second, Machine::transformation {z.parameters, x, false});
+        auto w = insert (v->second, Machine::definition {z.parameters, x});
         if (!w) return;
         throw exception {} << "conflicting definition " << subject {z.root, w->key} << w->value;
     }
@@ -118,17 +124,89 @@ namespace Diophant {
         def (z, p, *this);
     }
 
-    Machine::Machine () {}
+    void initialize (Machine &m) {
+        
+        make::symbol ("Impossible", m.registered);
+        make::symbol ("Null", m.registered);
+        make::symbol ("Bool", m.registered);
+        make::symbol ("Intuit", m.registered);
+        make::symbol ("Sign", m.registered);
+        make::symbol ("N", m.registered);
+        make::symbol ("Z", m.registered);
+        make::symbol ("Q", m.registered);
+        make::symbol ("Float", m.registered);
+        make::symbol ("String", m.registered);
+        make::symbol ("Int", m.registered);
+        make::symbol ("Uint", m.registered);
+        make::symbol ("List", m.registered);
+        make::symbol ("Tuple", m.registered);
+        make::symbol ("Struct", m.registered);
+        make::symbol ("Array", m.registered);
+        
+        make::symbol ("null", m.registered);
+        make::symbol ("true", m.registered);
+        make::symbol ("false", m.registered);
+        make::symbol ("unknown", m.registered);
+        make::symbol ("positive", m.registered);
+        make::symbol ("negative", m.registered);
+        make::symbol ("zero", m.registered);
+        make::symbol ("infinity", m.registered);
+        
+        make::symbol ("!l", m.registered);
+        make::symbol ("!r", m.registered);
+        make::symbol ("++l", m.registered);
+        make::symbol ("--l", m.registered);
+        make::symbol ("^", m.registered);
+        make::symbol ("*", m.registered);
+        make::symbol ("%", m.registered);
+        make::symbol ("/", m.registered);
+        make::symbol ("/%", m.registered);
+        make::symbol ("<", m.registered);
+        make::symbol (">", m.registered);
+        make::symbol ("<=", m.registered);
+        make::symbol (">=", m.registered);
+        make::symbol ("==", m.registered);
+        make::symbol ("!=", m.registered);
+        make::symbol ("&&", m.registered);
+        make::symbol ("||", m.registered);
+        make::symbol ("=", m.registered);
+        make::symbol ("/=", m.registered);
+        make::symbol ("<==>", m.registered);
+        make::symbol (":", m.registered);
+        make::symbol ("&", m.registered);
+        make::symbol ("|", m.registered);
+        
+        m.define (string {"_x == _x ? x:Value"}, string {"true"});
+        m.define (string {"_x == _y ? x:Value & y:Value"}, string {"false"});
+        m.define (string {"not true"}, string {"false"});
+        m.define (string {"not false"}, string {"true"});
+        m.define (string {"!_x ? x:Bool"}, string {"not"});
+        m.define (string {"_x != _y ? x:Value & y:Value"}, string {"!(x == y)"});
+        m.define (string {"and true true"}, string {"true"});
+        m.define (string {"and _x _y ? x:Bool & y:Bool"}, string {"false"});
+        m.define (string {"or false false"}, string {"false"});
+        m.define (string {"or _x _y ? x:Bool & y:Bool"}, string {"false"});
+        m.define (string {"xor _x _y ? x:Bool & y:Bool"}, string {"`!=`"});
+        m.define (string {"implies _x _y ? x:Bool & y:Bool"}, string {"or y !x"});
+        m.define (string {"nand true true"}, string {"false"});
+        m.define (string {"nand _x _y ? x:Bool y:Bool"}, string {"true"});
+        m.define (string {"nor false false"}, string {"true"});
+        m.define (string {"nor _x _y ? x:Bool & y:Bool"}, string {"false"});
+        m.define (string {"`&&`"}, string {"Bool => Bool => Bool # and"});
+        m.define (string {"`||`"}, string {"Bool => Bool => Bool # or"});
+        
+        
+    }
 
     // return the conflicting entry if there is one.
     // will not modify the overloads if there is a conflict.
-    const Machine::transformation *insert (Machine::overloads &o, const Machine::transformation &e) {
-        stack<const Machine::transformation &> left;
+    const Machine::definition *insert (Machine::overloads &o, const Machine::definition &e) {
+        stack<const Machine::definition &> left;
         Machine::overloads right = o;
         
         // flip through the stack
         while (data::size (right) > 0) {
-            Machine::transformation &next = right.first ();
+            Machine::definition &next = right.first ();
             
             // we order by the number of parameters, naturally.
             if (e.key.params.size () > next.key.params.size ()) goto flip;
@@ -142,7 +220,7 @@ namespace Diophant {
 
                 if (intuit are_equal = o.equal (); are_equal == yes) {
                     if (!bool (next.value)) {
-                        *next.value = *e.value;
+                        next.value = e.value;
                         return nullptr;
                     }
 
@@ -350,7 +428,6 @@ namespace Diophant {
             if (!r) continue;
 
             if (bool (e.value)) return replace (*e.value, *r);
-            else throw exception {} << "no definition provided";
         }
 
         return {};

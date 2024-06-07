@@ -11,6 +11,14 @@ namespace Diophant::expressions {
             return false;
         }
     }
+    
+    bool typed::operator == (const abstract &a) const {
+        try {
+            return type == dynamic_cast<const typed &> (a).type;
+        } catch (std::bad_cast) {
+            return false;
+        }
+    }
 
     bool such_that::operator == (const abstract &a) const {
         try {

@@ -43,6 +43,7 @@ namespace Diophant {
         test_case (
             "/< SKI calculus >/"
             "I _x -> x; K _x _y -> x; S _x _y _z -> x z (y z); S K I");
+        test_case ("eq _x _x ? x:Value -> true; _x == _y ? x:Value & y:Value -> false; eq 5 5");
     }
 
 }

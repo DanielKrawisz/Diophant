@@ -20,11 +20,25 @@ namespace Diophant {
 
         Machine machine {};
 
-        data::stack<Expression> stack {};
+        // the last several expressions that have been generated. 
+        // these could be for a list or some other structure. 
+        data::stack<Expression> expr {};
 
-        data::stack<data::stack<Expression>> back {};
+        // there can be lists within lists and so on, so we have
+        // a stack of stacks. 
+        data::stack<data::stack<Expression>> back_expr {};
         
+        // statements that have been generated in processing a
+        // let expression. 
+        data::stack<statement> statements;
+        
+        data::stack<data::stack<statement>> back_statements {};
+        
+        // list of symbols for constructing lambdas. 
         data::stack<Symbol> vars {};
+        
+        // whether we are reading a sequence of symbols for a
+        // lambda now. 
         bool reading_lambda_vars {false};
 
         handler<Expression &> write;
@@ -42,6 +56,9 @@ namespace Diophant {
         void open_object ();
         void close_list ();
         void close_object ();
+        
+        void dif ();
+        void let ();
 
         void start_vars ();
         void end_vars ();
@@ -86,133 +103,7 @@ namespace Diophant {
         void such_that ();
         
         void set ();
-        void def ();
     };
-    
-    void inline Parser::read_symbol (const data::string &in) {
-        if (reading_lambda_vars) vars <<= expressions::symbol::make (in, machine.registered);
-        else stack <<= make::symbol (in, machine.registered);
-    }
-    
-    void inline Parser::any () {
-        stack <<= make::any ();
-    }
-    
-    void inline Parser::var () {
-        stack = prepend (rest (stack), make::var (std::dynamic_pointer_cast<const expressions::symbol> (first (stack))));
-    }
-
-    void inline Parser::read_string (const data::string &in) {
-        stack <<= make::string (in);
-    }
-
-    void inline Parser::read_number (const data::string &in) {
-        stack <<= make::natural (N {in});
-    }
-
-    void inline Parser::negate () {
-        stack = prepend (rest (stack), make::negate (first (stack)));
-    }
-
-    void inline Parser::boolean_not () {
-        stack = prepend (rest (stack), make::boolean_not (first (stack)));
-    }
-
-    void inline Parser::mul () {
-        stack = prepend (rest (rest (stack)), make::times (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::pow () {
-        stack = prepend (rest (rest (stack)), make::power (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::div () {
-        stack = prepend (rest (rest (stack)), make::divide (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::div_mod () {
-        stack = prepend (rest (rest (stack)), make::div_mod (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::plus () {
-        stack = prepend (rest (rest (stack)), make::plus (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::minus () {
-        stack = prepend (rest (rest (stack)), make::minus (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::bool_equal () {
-        stack = prepend (rest (rest (stack)), make::bool_equal (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::bool_unequal () {
-        stack = prepend (rest (rest (stack)), make::bool_unequal (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::equal () {
-        stack = prepend (rest (rest (stack)), make::equal (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::unequal () {
-        stack = prepend (rest (rest (stack)), make::unequal (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::greater_equal () {
-        stack = prepend (rest (rest (stack)), make::greater_equal (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::less_equal () {
-        stack = prepend (rest (rest (stack)), make::less_equal (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::greater () {
-        stack = prepend (rest (rest (stack)), make::greater (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::less () {
-        stack = prepend (rest (rest (stack)), make::less (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::boolean_and () {
-        stack = prepend (rest (rest (stack)), make::boolean_and (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::boolean_or () {
-        stack = prepend (rest (rest (stack)), make::boolean_or (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::intuitionistic_and () {
-        stack = prepend (rest (rest (stack)), make::intuitionistic_and (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::intuitionistic_or () {
-        stack = prepend (rest (rest (stack)), make::intuitionistic_or (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::intuitionistic_implies () {
-        stack = prepend (rest (rest (stack)), make::intuitionistic_implies (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::such_that () {
-        stack = prepend (rest (rest (stack)), make::such_that (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::element () {
-        stack = prepend (rest (rest (stack)), make::element (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::call () {
-        stack = prepend (rest (rest (stack)), make::call (first (rest (stack)), first (stack)));
-    }
-
-    void inline Parser::start_vars () {
-        reading_lambda_vars = true;
-    }
-
-    void inline Parser::end_vars () {
-        reading_lambda_vars = false;
-    }
 }
 
 #endif

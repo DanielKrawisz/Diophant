@@ -18,6 +18,8 @@ int main (int args, char **arg) {
         std::cout << "\n result: " << std::string (x) << std::endl;
     }};
     
+    initialize (eval.machine);
+    
     try {
         while (true) {
             maybe<string> input = read ();

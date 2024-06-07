@@ -5,6 +5,9 @@
 #include <Diophant/expressions/binary.hpp>
 #include <Diophant/expressions/symbol.hpp>
 #include <Diophant/expressions/lambda.hpp>
+#include <Diophant/expressions/if.hpp>
+#include <Diophant/expressions/let.hpp>
+#include <Diophant/make.hpp>
 
 #include <tao/pegtl.hpp>
 
@@ -14,6 +17,19 @@ namespace parse {
     struct comment : seq<string<'/','<'>, star<seq<not_at<string<'>','/'>>, ascii::print>>, string<'>','/'>> {};
     struct white : sor<space, comment> {};
     struct ws : star<white> {};
+    
+    struct statement;
+    struct expression;
+    
+    // the overall structure of a Diophant program is a series of statements separated by ; followed by an expression. 
+    struct statement_separator : one<';'> {};
+    struct program : seq<star<seq<ws, statement, ws, statement_separator>>, ws, expression, ws, eof> {};
+    
+    struct pattern;
+
+    // statements are of the form pattern := expression. 
+    struct set : seq<string<':', '='>, ws, expression> {};
+    struct statement : seq<pattern, ws, set> {};
 
     // literals can be natural numbers or strings,
 
@@ -45,14 +61,11 @@ namespace parse {
     struct symbol : sor<normal_symbol, abnormal_symbol> {};
 
     struct var : seq<one<'_'>, opt<symbol>> {};
-
-    struct expression;
-    struct statement;
     
-    struct let : seq<string<'l', 'e', 't'>, not_at<ascii::print>, ws,
-        statement, star<seq<ws, one<','>, statement>>, 
-        string<'i','n'>, not_at<ascii::print>, ws, 
-        expression> {};
+    struct let_open : seq<string<'l', 'e', 't'>, not_at<ascii::print>> {};
+    struct let_in : seq<string<'i','n'>, not_at<ascii::print>> {};
+    
+    struct let : seq<let_open, ws, statement, star<seq<ws, one<','>, statement>>, let_in, ws, expression> {};
 
     struct dif : seq<string<'i', 'f'>, not_at<ascii::print>, ws, expression, ws,
         string<'t', 'h', 'e', 'n'>, not_at<ascii::print>, ws, expression, ws,
@@ -75,109 +88,111 @@ namespace parse {
         close_list> {};
     
     struct entry : seq<symbol, ws, one<':'>, ws, expression> {};
-    struct dstruct : seq<one<'{'>, ws, opt<seq<entry, ws, star<seq<one<','>, ws, entry, ws>>>>, one<'}'>> {};
+    //struct dstruct : seq<one<'{'>, ws, opt<seq<entry, ws, star<seq<one<','>, ws, entry, ws>>>>, one<'}'>> {};
     
-    struct structure : sor<number_lit, string_lit, symbol, var, let, parenthetical, list, dstruct, lambda> {};
+    struct expression_atom : sor<number_lit, string_lit, symbol, parenthetical, list, lambda, dif, let> {};
+    struct pattern_atom : sor<number_lit, string_lit, symbol, var, parenthetical, list> {};
 
-    struct call : seq<plus<white>, structure> {};
-    struct call_expr : seq<structure, star<call>> {};
-
-    struct unary_expr;
+    template <typename atom> struct call : seq<plus<white>, atom> {};
+    template <typename atom> struct call_expr : seq<atom, star<call<atom>>> {};
+    
     struct unary_operator : sor<one<'-'>, one<'!'>, one<'~'>, one<'+'>, one<'*'>> {};
-    struct unary_operation : seq<unary_operator, unary_expr> {};
-    struct unary_expr : sor<unary_operation, call_expr> {};
 
-    struct pow_expr;
-    struct mul_expr;
-    struct mod_expr;
-    struct div_mod_expr;
-    struct div_expr;
-    struct sub_expr;
-    struct add_expr;
+    template <typename atom> struct unary_expr;
+    template <typename atom> struct unary_operation : seq<unary_operator, unary_expr<atom>> {};
+    template <typename atom> struct unary_expr : sor<unary_operation<atom>, call_expr<atom>> {};
 
-    struct pow_op : seq<ws, one<'^'>, ws, pow_expr> {};
-    struct mul_op : seq<ws, sor<one<'*'>, one<'%'>, one<'~'>>, ws, mul_expr> {};
-    struct mod_op : seq<ws, string<'%'>, ws, mod_expr> {};
-    struct div_mod_op : seq<ws, string<'/', '%'>, ws, div_mod_expr> {};
-    struct div_op : seq<ws, one<'/'>, ws, div_expr> {};
-    struct sub_op : seq<ws, one<'-'>, ws, sub_expr> {};
-    struct add_op : seq<ws, one<'+'>, ws, add_expr> {};
+    template <typename atom> struct pow_expr;
+    template <typename atom> struct mul_expr;
+    template <typename atom> struct mod_expr;
+    template <typename atom> struct div_mod_expr;
+    template <typename atom> struct div_expr;
+    template <typename atom> struct sub_expr;
+    template <typename atom> struct add_expr;
 
-    struct pow_expr : seq<unary_expr, opt<pow_op>> {};
-    struct mul_expr : seq<pow_expr, opt<mul_op>> {};
-    struct mod_expr : seq<mul_expr, opt<mod_op>> {};
-    struct div_mod_expr : seq<mod_expr, opt<div_mod_op>> {};
-    struct div_expr : seq<div_mod_expr, opt<div_op>> {};
-    struct sub_expr : seq<div_expr, opt<sub_op>> {};
-    struct add_expr : seq<sub_expr, opt<add_op>> {};
+    template <typename atom> struct pow_op : seq<ws, one<'^'>, ws, pow_expr<atom>> {};
+    template <typename atom> struct mul_op : seq<ws, sor<one<'*'>, one<'%'>, one<'~'>>, ws, mul_expr<atom>> {};
+    template <typename atom> struct mod_op : seq<ws, string<'%'>, ws, mod_expr<atom>> {};
+    template <typename atom> struct div_mod_op : seq<ws, string<'/', '%'>, ws, div_mod_expr<atom>> {};
+    template <typename atom> struct div_op : seq<ws, one<'/'>, ws, div_expr<atom>> {};
+    template <typename atom> struct sub_op : seq<ws, one<'-'>, ws, sub_expr<atom>> {};
+    template <typename atom> struct add_op : seq<ws, one<'+'>, ws, add_expr<atom>> {};
 
-    struct comp_expr;
-    struct greater_equal_op : seq<ws, string<'>','='>, ws, comp_expr> {};
-    struct less_equal_op : seq<ws, string<'<','='>, ws, comp_expr> {};
-    struct greater_op : seq<ws, one<'>'>, ws, comp_expr> {};
-    struct less_op : seq<ws, one<'<'>, ws, comp_expr> {};
+    template <typename atom> struct pow_expr : seq<unary_expr<atom>, opt<pow_op<atom>>> {};
+    template <typename atom> struct mul_expr : seq<pow_expr<atom>, opt<mul_op<atom>>> {};
+    template <typename atom> struct mod_expr : seq<mul_expr<atom>, opt<mod_op<atom>>> {};
+    template <typename atom> struct div_mod_expr : seq<mod_expr<atom>, opt<div_mod_op<atom>>> {};
+    template <typename atom> struct div_expr : seq<div_mod_expr<atom>, opt<div_op<atom>>> {};
+    template <typename atom> struct sub_expr : seq<div_expr<atom>, opt<sub_op<atom>>> {};
+    template <typename atom> struct add_expr : seq<sub_expr<atom>, opt<add_op<atom>>> {};
+
+    template <typename atom> struct comp_expr;
+    template <typename atom> struct greater_equal_op : seq<ws, string<'>','='>, ws, comp_expr<atom>> {};
+    template <typename atom> struct less_equal_op : seq<ws, string<'<','='>, ws, comp_expr<atom>> {};
+    template <typename atom> struct greater_op : seq<ws, one<'>'>, ws, comp_expr<atom>> {};
+    template <typename atom> struct less_op : seq<ws, one<'<'>, ws, comp_expr<atom>> {};
     
-    struct comp_expr : seq<add_expr,
-        opt<sor<greater_equal_op, less_equal_op, greater_op, less_op>>> {};
+    template <typename atom> struct comp_expr : seq<add_expr<atom>,
+        opt<sor<greater_equal_op<atom>, less_equal_op<atom>, greater_op<atom>, less_op<atom>>>> {};
 
-    struct bool_equal_expr;
+    template <typename atom> struct bool_equal_expr;
 
-    struct bool_equal_op : seq<ws, string<'=','='>, ws, bool_equal_expr> {};
-    struct bool_unequal_op : seq<ws, string<'!','='>, ws, bool_equal_expr> {};
+    template <typename atom> struct bool_equal_op : seq<ws, string<'=','='>, ws, bool_equal_expr<atom>> {};
+    template <typename atom> struct bool_unequal_op : seq<ws, string<'!','='>, ws, bool_equal_expr<atom>> {};
 
-    struct bool_equal_expr : seq<comp_expr, opt<sor<bool_equal_op, bool_equal_op>>> {};
-    struct bool_unequal_expr : seq<bool_equal_expr, opt<sor<bool_equal_op, bool_unequal_op>>> {};
+    template <typename atom> struct bool_equal_expr : seq<comp_expr<atom>, opt<sor<bool_equal_op<atom>, bool_equal_op<atom>>>> {};
+    template <typename atom> struct bool_unequal_expr : 
+        seq<bool_equal_expr<atom>, opt<sor<bool_equal_op<atom>, bool_unequal_op<atom>>>> {};
 
-    struct bool_and_expr;
-    struct bool_or_expr;
+    template <typename atom> struct bool_and_expr;
+    template <typename atom> struct bool_or_expr;
 
-    struct bool_and_op : seq<ws, string<'&','&'>, ws, bool_and_expr> {};
-    struct bool_or_op : seq<ws, string<'|','|'>, ws, bool_or_expr> {};
+    template <typename atom> struct bool_and_op : seq<ws, string<'&','&'>, ws, bool_and_expr<atom>> {};
+    template <typename atom> struct bool_or_op : seq<ws, string<'|','|'>, ws, bool_or_expr<atom>> {};
 
-    struct bool_and_expr : seq<bool_unequal_expr, opt<bool_and_op>> {};
-    struct bool_or_expr : seq<bool_and_expr, opt<bool_or_op>> {};
+    template <typename atom> struct bool_and_expr : seq<bool_unequal_expr<atom>, opt<bool_and_op<atom>>> {};
+    template <typename atom> struct bool_or_expr : seq<bool_and_expr<atom>, opt<bool_or_op<atom>>> {};
 
-    struct element_op : seq<ws, one<':'>, ws, bool_or_expr> {};
-    struct element_expr : seq<bool_or_expr, opt<element_op>> {};
+    template <typename atom> struct element_op : seq<ws, one<':'>, ws, bool_or_expr<atom>> {};
+    template <typename atom> struct element_expr : seq<bool_or_expr<atom>, opt<element_op<atom>>> {};
     
-    struct equal_expr;
-    struct unequal_expr;
-    struct double_implication_expr;
+    template <typename atom> struct equal_expr;
+    template <typename atom> struct unequal_expr;
+    template <typename atom> struct double_implication_expr;
     
-    struct equal_op : seq<ws, one<'='>, ws, equal_expr> {};
-    struct unequal_op : seq<ws, string<'/', '='>, ws, unequal_expr> {};
-    struct double_implication_op : seq<ws, string<'<','=','=','>'>, ws, double_implication_expr> {};
+    template <typename atom> struct equal_op : seq<ws, one<'='>, ws, equal_expr<atom>> {};
+    template <typename atom> struct unequal_op : seq<ws, string<'/', '='>, ws, unequal_expr<atom>> {};
+    template <typename atom> struct double_implication_op : seq<ws, string<'<','=','=','>'>, ws, double_implication_expr<atom>> {};
     
-    struct equal_expr : seq<element_expr, opt<equal_op>> {};
-    struct unequal_expr : seq<equal_expr, opt<unequal_op>> {};
-    struct double_implication_expr : seq<unequal_expr, opt<double_implication_op>> {};
+    template <typename atom> struct equal_expr : seq<element_expr<atom>, opt<equal_op<atom>>> {};
+    template <typename atom> struct unequal_expr : seq<equal_expr<atom>, opt<unequal_op<atom>>> {};
+    template <typename atom> struct double_implication_expr : seq<unequal_expr<atom>, opt<double_implication_op<atom>>> {};
     
-    struct intuitionistic_and_expr;
-    struct intuitionistic_or_expr;
-    struct intuitionistic_implies_expr;
+    template <typename atom> struct intuitionistic_and_expr;
+    template <typename atom> struct intuitionistic_or_expr;
+    template <typename atom> struct intuitionistic_implies_expr;
 
-    struct intuitionistic_and_op : seq<ws, one<'&'>, ws, intuitionistic_and_expr> {};
-    struct intuitionistic_or_op : seq<ws, one<'|'>, ws, intuitionistic_or_expr> {};
-    struct intuitionistic_implies_op : seq<ws, string<'=','>'>, ws, intuitionistic_implies_expr> {};
+    template <typename atom> struct intuitionistic_and_op : seq<ws, one<'&'>, ws, intuitionistic_and_expr<atom>> {};
+    template <typename atom> struct intuitionistic_or_op : seq<ws, one<'|'>, ws, intuitionistic_or_expr<atom>> {};
+    template <typename atom> struct intuitionistic_implies_op : 
+        seq<ws, string<'=','>'>, ws, intuitionistic_implies_expr<atom>> {};
 
-    struct intuitionistic_and_expr : seq<double_implication_expr, opt<intuitionistic_and_op>> {};
-    struct intuitionistic_or_expr : seq<intuitionistic_and_expr, opt<intuitionistic_or_op>> {};
-    struct intuitionistic_implies_expr : seq<intuitionistic_or_expr, opt<intuitionistic_implies_op>> {};
+    template <typename atom> struct intuitionistic_and_expr : seq<double_implication_expr<atom>, opt<intuitionistic_and_op<atom>>> {};
+    template <typename atom> struct intuitionistic_or_expr : seq<intuitionistic_and_expr<atom>, opt<intuitionistic_or_op<atom>>> {};
+    template <typename atom> struct intuitionistic_implies_expr : 
+        seq<intuitionistic_or_expr<atom>, opt<intuitionistic_implies_op<atom>>> {};
     
-    struct such_that_expr;
-    struct such_that_op : seq<ws, string<'?'>, ws, such_that_expr> {};
-    struct such_that_expr : seq<intuitionistic_implies_expr, opt<such_that_op>> {};
-    struct cast_expr : seq<such_that_expr, opt<seq<ws, string<'#'>, ws, intuitionistic_implies_expr>>> {};
-    struct expression : cast_expr {};
+    template <typename atom> struct such_that_expr;
+    template <typename atom> struct such_that_op : seq<ws, string<'?'>, ws, such_that_expr<atom>> {};
+    template <typename atom> struct such_that_expr : seq<intuitionistic_implies_expr<atom>, opt<such_that_op<atom>>> {};
+    template <typename atom> struct cast_expr : 
+        seq<such_that_expr<atom>, opt<seq<ws, string<'#'>, ws, intuitionistic_implies_expr<atom>>>> {};
+    
+    struct expression : cast_expr<expression_atom> {};
+    struct pattern : such_that_expr<pattern_atom> {};
     
     struct parse_expression : seq<ws, expression, ws, eof> {};
 
-    struct set : seq<string<'-', '>'>, ws, expression> {};
-    struct def : seq<string<':', '='>, ws, expression> {};
-
-    struct statement : seq<ws, expression, ws, sor<set, def>, one<';'>> {};
-
-    struct program : seq<star<statement>, ws, expression, ws, eof> {};
 }
 
 namespace Diophant {
@@ -256,14 +271,21 @@ namespace Diophant {
         }
     };
 
-    template <> struct eval_action<parse::call> {
+    template <> struct eval_action<parse::dif> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.dif ();
+        }
+    };
+
+    template <typename atom> struct eval_action<parse::call<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.call ();
         }
     };
 
-    template <> struct eval_action<parse::unary_operation> {
+    template <typename atom> struct eval_action<parse::unary_operation<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             // NOTE this won't work if we ever have any unary operators that are bigger than one char. 
@@ -271,174 +293,191 @@ namespace Diophant {
         }
     };
 
-    template <> struct eval_action<parse::mul_op> {
+    template <typename atom> struct eval_action<parse::mul_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.mul ();
         }
     };
 
-    template <> struct eval_action<parse::pow_op> {
+    template <typename atom> struct eval_action<parse::pow_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.pow ();
         }
     };
 
-    template <> struct eval_action<parse::div_op> {
+    template <typename atom> struct eval_action<parse::div_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.div ();
         }
     };
 
-    template <> struct eval_action<parse::div_mod_op> {
+    template <typename atom> struct eval_action<parse::div_mod_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.div_mod ();
         }
     };
 
-    template <> struct eval_action<parse::add_op> {
+    template <typename atom> struct eval_action<parse::add_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.plus ();
         }
     };
 
-    template <> struct eval_action<parse::sub_op> {
+    template <typename atom> struct eval_action<parse::sub_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.minus ();
         }
     };
 
-    template <> struct eval_action<parse::greater_equal_op> {
+    template <typename atom> struct eval_action<parse::greater_equal_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.greater_equal ();
         }
     };
 
-    template <> struct eval_action<parse::less_equal_op> {
+    template <typename atom> struct eval_action<parse::less_equal_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.less_equal ();
         }
     };
 
-    template <> struct eval_action<parse::less_op> {
+    template <typename atom> struct eval_action<parse::less_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.less ();
         }
     };
 
-    template <> struct eval_action<parse::greater_op> {
+    template <typename atom> struct eval_action<parse::greater_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.greater ();
         }
     };
 
-    template <> struct eval_action<parse::bool_equal_op> {
+    template <typename atom> struct eval_action<parse::bool_equal_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.bool_equal ();
         }
     };
 
-    template <> struct eval_action<parse::bool_unequal_op> {
+    template <typename atom> struct eval_action<parse::bool_unequal_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.bool_unequal ();
         }
     };
 
-    template <> struct eval_action<parse::bool_and_op> {
+    template <typename atom> struct eval_action<parse::bool_and_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.boolean_and ();
         }
     };
 
-    template <> struct eval_action<parse::bool_or_op> {
+    template <typename atom> struct eval_action<parse::bool_or_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.boolean_or ();
         }
     };
 
-    template <> struct eval_action<parse::equal_op> {
+    template <typename atom> struct eval_action<parse::equal_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.equal ();
         }
     };
 
-    template <> struct eval_action<parse::unequal_op> {
+    template <typename atom> struct eval_action<parse::unequal_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.unequal ();
         }
     };
 
-    template <> struct eval_action<parse::intuitionistic_and_op> {
+    template <typename atom> struct eval_action<parse::intuitionistic_and_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.intuitionistic_and ();
         }
     };
 
-    template <> struct eval_action<parse::intuitionistic_or_op> {
+    template <typename atom> struct eval_action<parse::intuitionistic_or_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.intuitionistic_or ();
         }
     };
 
-    template <> struct eval_action<parse::intuitionistic_implies_op> {
+    template <typename atom> struct eval_action<parse::intuitionistic_implies_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.intuitionistic_implies ();
         }
     };
 
-    template <> struct eval_action<parse::element_op> {
+    template <typename atom> struct eval_action<parse::element_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.element ();
         }
     };
 
-    template <> struct eval_action<parse::such_that_op> {
+    template <typename atom> struct eval_action<parse::such_that_op<atom>> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.such_that ();
         }
     };
 
+    template <> struct eval_action<parse::let_open> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.back_statements <<= eval.statements;
+            eval.statements = {};
+        }
+    };
+
+    template <> struct eval_action<parse::let> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.expr <<= make::let (data::first (eval.back_statements), data::first (eval.expr));
+            eval.back_statements = data::rest (eval.back_statements);
+        }
+    };
+
     template <> struct eval_action<parse::set> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            eval.statements <<= statement {eval.machine.make_subject (eval.expr[0]), eval.expr[1]};
+            eval.expr = data::rest (data::rest (eval.expr));
+        }
+    };
+
+    template <> struct eval_action<parse::statement_separator> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.set ();
         }
     };
 
-    template <> struct eval_action<parse::def> {
-        template <typename Input>
-        static void apply (const Input &in, Parser &eval) {
-            eval.def ();
-        }
-    };
-
     template <> struct eval_action<parse::program> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            if (data::size (eval.stack) >= 1) {
-                auto v = evaluate (eval.stack.first (), eval.machine);
+            if (data::size (eval.expr) >= 1) {
+                auto v = evaluate (eval.expr.first (), eval.machine);
                 eval.write (v);
-                eval.stack = data::stack<Expression> {};
+                eval.expr = data::stack<Expression> {};
             }
         }
     };
@@ -446,9 +485,9 @@ namespace Diophant {
     template <> struct eval_action<parse::parse_expression> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            if (data::size (eval.stack) >= 1) {
-                eval.write (eval.stack.first ());
-                eval.stack = data::stack<Expression> {};
+            if (data::size (eval.expr) >= 1) {
+                eval.write (eval.expr.first ());
+                eval.expr = data::stack<Expression> {};
             }
         }
     };
@@ -464,64 +503,6 @@ namespace Diophant {
     }
 
     void Parser::initialize () {
-        make::symbol ("Impossible", machine.registered);
-        make::symbol ("Null", machine.registered);
-        make::symbol ("Bool", machine.registered);
-        make::symbol ("Intuit", machine.registered);
-        make::symbol ("Sign", machine.registered);
-        make::symbol ("N", machine.registered);
-        make::symbol ("Z", machine.registered);
-        make::symbol ("Q", machine.registered);
-        make::symbol ("Float", machine.registered);
-        make::symbol ("String", machine.registered);
-        make::symbol ("Int", machine.registered);
-        make::symbol ("Uint", machine.registered);
-        make::symbol ("List", machine.registered);
-        make::symbol ("Tupple", machine.registered);
-        make::symbol ("Struct", machine.registered);
-        make::symbol ("Array", machine.registered);
-        make::symbol ("!l", machine.registered);
-        make::symbol ("!r", machine.registered);
-        make::symbol ("++l", machine.registered);
-        make::symbol ("--l", machine.registered);
-        make::symbol ("^", machine.registered);
-        make::symbol ("*", machine.registered);
-        make::symbol ("%", machine.registered);
-        make::symbol ("/", machine.registered);
-        make::symbol ("/%", machine.registered);
-        make::symbol ("<", machine.registered);
-        make::symbol (">", machine.registered);
-        make::symbol ("<=", machine.registered);
-        make::symbol (">=", machine.registered);
-        make::symbol ("==", machine.registered);
-        make::symbol ("!=", machine.registered);
-        make::symbol ("&&", machine.registered);
-        make::symbol ("||", machine.registered);
-        make::symbol ("=", machine.registered);
-        make::symbol ("/=", machine.registered);
-        make::symbol ("<==>", machine.registered);
-        make::symbol (":", machine.registered);
-        make::symbol ("&", machine.registered);
-        make::symbol ("|", machine.registered);
-        /*
-        read_line (R"(_x == _x ? x:Value -> true; )");
-        read_line (R"(_x == _y ? x:Value & y:Value -> false; )");
-        read_line (R"(not true -> false; )");
-        read_line (R"(not false -> true; )");
-        read_line (R"(!_x ? x:Bool -> not; )");
-        read_line (R"(_x != _y ? x:Value & y:Value -> !(x == y); )");
-        read_line (R"(and true true -> true; )");
-        read_line (R"(and _x _y ? x:Bool & y:Bool -> false; )");
-        read_line (R"(or false false -> false; )");
-        read_line (R"(or _x _y ? x:Bool & y:Bool -> false; )");
-        read_line (R"(xor _x _y ? x:Bool & y:Bool -> `!=`; )");
-        read_line (R"(implies _x _y ? x:Bool & y:Bool -> or y !x; )");
-        read_line (R"(nand true true -> false; )");
-        read_line (R"(nand _x _y ? x:Bool y:Bool -> true; )");
-        read_line (R"(nor false false -> true; )");
-        read_line (R"(nor _x _y ? x:Bool & y:Bool -> false; )");
-        read_line (R"(`&&` -> Bool => Bool => Bool # and; )");
-        read_line (R"(`||` -> Bool => Bool => Bool # or; )");*/
         /*
         read_line (R"(`=` ? (@ a -> a = a) & (@ a b -> a = b => b = a) & (@ a b c -> a = b & b = c => a = c); ");
         read_line (R"(Natural _N _S -> 
@@ -571,43 +552,171 @@ namespace Diophant {
         // TODO fill in the missing functions
 
     }
+    
+    void inline Parser::read_symbol (const data::string &in) {
+        if (reading_lambda_vars) vars <<= expressions::symbol::make (in, machine.registered);
+        else expr <<= make::symbol (in, machine.registered);
+    }
+    
+    void inline Parser::any () {
+        expr <<= make::any ();
+    }
+    
+    void inline Parser::var () {
+        expr = prepend (rest (expr), make::var (std::dynamic_pointer_cast<const expressions::symbol> (first (expr))));
+    }
+
+    void inline Parser::read_string (const data::string &in) {
+        expr <<= make::string (in);
+    }
+
+    void inline Parser::read_number (const data::string &in) {
+        expr <<= make::natural (N {in});
+    }
+
+    void inline Parser::negate () {
+        expr = prepend (rest (expr), make::negate (first (expr)));
+    }
+
+    void inline Parser::boolean_not () {
+        expr = prepend (rest (expr), make::boolean_not (first (expr)));
+    }
+
+    void inline Parser::mul () {
+        expr = prepend (rest (rest (expr)), make::times (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::pow () {
+        expr = prepend (rest (rest (expr)), make::power (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::div () {
+        expr = prepend (rest (rest (expr)), make::divide (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::div_mod () {
+        expr = prepend (rest (rest (expr)), make::div_mod (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::plus () {
+        expr = prepend (rest (rest (expr)), make::plus (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::minus () {
+        expr = prepend (rest (rest (expr)), make::minus (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::bool_equal () {
+        expr = prepend (rest (rest (expr)), make::bool_equal (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::bool_unequal () {
+        expr = prepend (rest (rest (expr)), make::bool_unequal (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::equal () {
+        expr = prepend (rest (rest (expr)), make::equal (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::unequal () {
+        expr = prepend (rest (rest (expr)), make::unequal (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::greater_equal () {
+        expr = prepend (rest (rest (expr)), make::greater_equal (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::less_equal () {
+        expr = prepend (rest (rest (expr)), make::less_equal (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::greater () {
+        expr = prepend (rest (rest (expr)), make::greater (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::less () {
+        expr = prepend (rest (rest (expr)), make::less (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::boolean_and () {
+        expr = prepend (rest (rest (expr)), make::boolean_and (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::boolean_or () {
+        expr = prepend (rest (rest (expr)), make::boolean_or (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::intuitionistic_and () {
+        expr = prepend (rest (rest (expr)), make::intuitionistic_and (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::intuitionistic_or () {
+        expr = prepend (rest (rest (expr)), make::intuitionistic_or (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::intuitionistic_implies () {
+        expr = prepend (rest (rest (expr)), make::intuitionistic_implies (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::such_that () {
+        expr = prepend (rest (rest (expr)), make::such_that (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::element () {
+        expr = prepend (rest (rest (expr)), make::element (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::call () {
+        expr = prepend (rest (rest (expr)), make::call (first (rest (expr)), first (expr)));
+    }
+
+    void inline Parser::start_vars () {
+        reading_lambda_vars = true;
+    }
+
+    void inline Parser::end_vars () {
+        reading_lambda_vars = false;
+    }
 
     void Parser::lambda () {
-        stack = prepend (rest (stack), make::lambda (vars, first (stack)));
+        expr = prepend (rest (expr), make::lambda (vars, first (expr)));
         vars = {};
     }
 
     void Parser::open_list () {
-        back = stack;
-        stack = data::stack<Expression> {};
+        back_expr = expr;
+        expr = data::stack<Expression> {};
     }
 
     void Parser::open_object () {
-        back = stack;
-        stack = data::stack<Expression> {};
+        back_expr = expr;
+        expr = data::stack<Expression> {};
     }
 
     void Parser::close_list () {
-        stack = prepend (first (back), make::list (stack));
-        back = rest (back);
+        expr = prepend (first (back_expr), make::list (expr));
+        back_expr = rest (back_expr);
     }
 
     void Parser::close_object () {
         data::stack<entry<Expression, Expression>> m;
-        while (data::size (stack) > 0) m <<= entry<Expression, Expression> {first (rest (stack)), first (stack)};
-        stack = prepend (first (back), make::map (m));
-        back = rest (back);
+        while (data::size (expr) > 0) m <<= entry<Expression, Expression> {first (rest (expr)), first (expr)};
+        expr = data::prepend (first (back_expr), make::map (m));
+        back_expr = rest (expr);
     }
     
     void Parser::unary (char op) {
-        stack = prepend (rest (stack), 
-            expressions::left_unary_expression::make (expressions::left_unary_operand {op}, first (stack)));
+        expr = prepend (rest (expr), 
+            expressions::left_unary_expression::make (expressions::left_unary_operand {op}, first (expr)));
     }
     
     void Parser::set () {
-        machine.define (machine.make_subject (first (rest (stack))), first (stack));
-        stack = prepend (rest (rest (stack)), first (stack));
+        auto &st = first (statements);
+        machine.define (st.subject, st.predicate);
+        statements = rest (statements);
     }
     
-    void Parser::def () {}
+    void Parser::dif () {
+        expr = prepend (rest (rest (rest (expr))), make::dif (expr[0], expr[1], expr[2]));
+    }
 }

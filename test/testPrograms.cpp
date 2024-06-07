@@ -24,6 +24,7 @@ namespace Diophant {
         values_test_case ("1", "(@ x -> x) 1");
         values_test_case ("[1, 2, 3]", "[1, 2, 3]");
         values_test_case ("3", "n -> 3; n");
+        values_test_case ("[true, false]", "eq _x _x ? x:Value -> true; _x == _y ? x:Value & y:Value -> false; [eq 5 5, eq 7 3]");
         /*
         test_case ("false", "!true");
         test_case ("true", "!false");
@@ -36,6 +37,24 @@ namespace Diophant {
         test_case ("true", "1 > 2");
         test_case ("false", "1 < 2");*/
         //test_case ("13", "fib 0 = 0; fib 1 = 1; fib x:N = fib (x - 1) + fib (x - 2)")
+    }
+    
+    void cast_test_case (const string &type, const string &expr, bool valid = true) {
+        
+    }
+    
+    TEST (ProgramTest, TestCast) {
+        cast_test_case ("Null", "null");
+        cast_test_case ("Value", "null");
+        cast_test_case ("Bool", "true");
+        cast_test_case ("Bool", "false");
+        cast_test_case ("Value", "true");
+        cast_test_case ("Bool", "null", false);
+        cast_test_case ("Null", "true", false);
+        cast_test_case ("Bool", "unknown", false);
+        cast_test_case ("Intuit", "unknown");
+        cast_test_case ("N", "0");
+        cast_test_case ("N", "1");
     }
     /*
     void program_test_case (const string &expected, const string &program) {

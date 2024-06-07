@@ -6,36 +6,9 @@
 #include <Diophant/replace.hpp>
 #include <Diophant/pattern.hpp>
 #include <Diophant/expressions/apply.hpp>
+#include <Diophant/statement.hpp>
 
 namespace Diophant {
-
-    struct unknown_construction : unknown_operation {
-        unknown_construction (Type &x) : unknown_operation {} {
-            *this << "do not know if we can construct type " << x;
-        }
-    };
-
-    struct parameters {
-        cross<pattern> params;
-        type such_that;
-
-        parameters (): params {}, such_that {} {}
-        parameters (stack<Expression> z, Type st = {});
-        
-        bool operator == (const parameters &) const;
-
-    };
-
-    intuitionistic_partial_ordering operator <=> (const parameters &, const parameters &);
-
-    std::ostream &operator << (std::ostream &, const parameters &);
-
-    struct subject {
-        Symbol root;
-        Diophant::parameters parameters;
-
-        subject (Symbol &r, const Diophant::parameters &p = {}): root {r}, parameters {p} {}
-    };
 
     std::ostream &operator << (std::ostream &, const subject &);
 
@@ -44,6 +17,9 @@ namespace Diophant {
 
         void declare (const subject &);
         void define (const subject &, Expression &);
+        
+        void declare (const string &);
+        void define (const string &, Expression &);
 
         maybe<replacements> match (parameters &, Expression &) const;
         
@@ -52,19 +28,21 @@ namespace Diophant {
             return true;
         }
         
-        Machine ();
-        struct transformation;
+        Machine () {}
+        
+        struct definition;
 
-        using overloads = stack<transformation>;
-
-        struct transformation {
+        using overloads = stack<definition>;
+        
+        struct definition {
             Diophant::parameters key;
             maybe<expression> value;
             bool locked;
-
             overloads more_specific;
             
-            friend std::ostream &operator << (std::ostream &, const transformation &);
+            friend std::ostream &operator << (std::ostream &, const definition &);
+            definition (const Diophant::parameters &k, const maybe<expression> &v = {}): 
+                key {k}, value {v}, locked {false}, more_specific {} {}
         };
 
         std::map<expressions::symbol, overloads> definitions;
@@ -73,6 +51,8 @@ namespace Diophant {
         
         subject make_subject (Expression &);
     };
+    
+    void initialize (Machine&);
 
     std::ostream &operator << (std::ostream &, const Machine &);
 
@@ -81,15 +61,13 @@ namespace Diophant {
         if (p.such_that.get () != nullptr) o << " ? " << p.such_that;
         return o;
     }
-
-    std::ostream inline &operator << (std::ostream &o, const subject &z) {
-        return o << z.root << z.parameters;
+    
+    void inline Machine::declare (const string &z) {
+        declare (make_subject (expression {z}));
     }
     
-    std::ostream inline &operator << (std::ostream &o, const Machine::transformation &t) {
-        o << t.key;
-        if (bool (t.value)) return o << " -> " << *t.value;
-        return o << ";";
+    void inline Machine::define (const string &z, Expression &x) {
+        define (make_subject (expression {z}), x);
     }
 
 }
