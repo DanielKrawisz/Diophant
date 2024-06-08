@@ -26,24 +26,29 @@ namespace Diophant {
     
     TEST (ParseTest, TestParse) {
         test_case ("1");
+        test_case ("/< This is a comment >/1");
+        test_case ("1/< This is a comment >/");
         test_case ("1; 2", false);
         test_case ("n := 3; n");
-        test_case ("n -> 3; n");
+        test_case ("n -> 3; n", false);
         test_case ("a b c");
         test_case (
             "/< this is a list of numbers >/"
             "[1, 2, 3]");
         test_case (R"("a string")");
-        test_case ("f _x /; x:N -> x + x; f 5", false);
-        test_case ("f _x ? x:N -> x + x; f 5");
-        test_case (R"(f _x _y -> (y x) y; f "a" "b")");
+        test_case ("f _x /; x:N := x + x; f 5", false);
+        test_case ("f _x ? x:N := x + x; f 5");
+        test_case (R"(f _x _y := (y x) y; f "a" "b")");
         test_case (
             "/< this is a lambda >/"
             "(@ x -> x x) z");
         test_case (
             "/< SKI calculus >/"
-            "I _x -> x; K _x _y -> x; S _x _y _z -> x z (y z); S K I");
-        test_case ("eq _x _x ? x:Value -> true; _x == _y ? x:Value & y:Value -> false; eq 5 5");
+            "I _x := x; K _x _y := x; S _x _y _z := x z (y z); S K I");
+        test_case ("eq _x _x ? x:Value := true; _x == _y ? x:Value & y:Value := false; eq 5 5");
+        test_case ("let x -> 3 in x + x");
+        test_case ("let x -> 3, y -> 7 in x ^ y");
+        test_case ("if 2 < 0 then 222 else 6666");
     }
 
 }

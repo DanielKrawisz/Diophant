@@ -28,7 +28,7 @@ namespace Diophant {
             return true;
         }
         
-        Machine () {}
+        Machine ();
         
         struct definition;
 

@@ -15,7 +15,7 @@ namespace parse {
     using namespace tao::pegtl;
     
     struct comment : seq<string<'/','<'>, star<seq<not_at<string<'>','/'>>, ascii::print>>, string<'>','/'>> {};
-    struct white : sor<space, comment> {};
+    struct white : sor<one<' '>, one<'\t'>, one<'\n'>, comment> {};
     struct ws : star<white> {};
     
     struct statement;
@@ -53,23 +53,25 @@ namespace parse {
         one<'"'>> {};                                         // closing "
     
     // symbols are alpha characters followed by _ and alphanumeric.
-    struct normal_symbol : seq<alpha, star<sor<alnum, one<'_'>>>> {};
+    struct symbol_char : sor<alnum, one<'_'>> {};
+    struct normal_symbol : seq<alpha, star<symbol_char>> {};
     
     // you can also have a symbol that's `any string inside these`. 
     struct abnormal_symbol : seq<one<'`'>, star<seq<not_at<one<'`'>>, sor<seq<string<'\\', '`'>>, ascii::print>>>, one<'`'>> {};
 
-    struct symbol : sor<normal_symbol, abnormal_symbol> {};
+    struct symbol : minus<sor<normal_symbol, abnormal_symbol>, 
+        sor<string<'i', 'f'>, string<'i', 'n'>, string<'l', 'e', 't'>, string<'t', 'h', 'e', 'n'>, string<'e', 'l', 's', 'e'>>> {};
 
     struct var : seq<one<'_'>, opt<symbol>> {};
     
-    struct let_open : seq<string<'l', 'e', 't'>, not_at<ascii::print>> {};
-    struct let_in : seq<string<'i','n'>, not_at<ascii::print>> {};
-    
-    struct let : seq<let_open, ws, statement, star<seq<ws, one<','>, statement>>, let_in, ws, expression> {};
+    struct let_open : seq<string<'l', 'e', 't'>, not_at<symbol_char>> {};
+    struct let_in : seq<string<'i','n'>, not_at<symbol_char>> {};
+    struct rule : seq<pattern, ws, string<'-', '>'>, ws, expression> {};
+    struct let : seq<let_open, ws, rule, star<seq<ws, one<','>, ws, rule>>, ws, let_in, ws, expression> {};
 
-    struct dif : seq<string<'i', 'f'>, not_at<ascii::print>, ws, expression, ws,
-        string<'t', 'h', 'e', 'n'>, not_at<ascii::print>, ws, expression, ws,
-        string<'e', 'l', 's', 'e'>, not_at<ascii::print>, ws, expression> {};
+    struct dif : seq<string<'i', 'f'>, not_at<symbol_char>, ws, expression, ws,
+        string<'t', 'h', 'e', 'n'>, not_at<symbol_char>, ws, expression, ws,
+        string<'e', 'l', 's', 'e'>, not_at<symbol_char>, ws, expression> {};
     
     struct lambda_start : one<'@'> {};
     struct lambda_arrow : string<'-','>'> {};
@@ -87,10 +89,10 @@ namespace parse {
             opt<seq<expression, ws, star<seq<one<','>, ws, expression, ws>>>>,
         close_list> {};
     
-    struct entry : seq<symbol, ws, one<':'>, ws, expression> {};
-    //struct dstruct : seq<one<'{'>, ws, opt<seq<entry, ws, star<seq<one<','>, ws, entry, ws>>>>, one<'}'>> {};
+    struct entry : seq<symbol, ws, string<'-', '>'>, ws, expression> {};
+    struct dstruct : seq<one<'{'>, ws, opt<seq<entry, ws, star<seq<one<','>, ws, entry, ws>>>>, one<'}'>> {};
     
-    struct expression_atom : sor<number_lit, string_lit, symbol, parenthetical, list, lambda, dif, let> {};
+    struct expression_atom : sor<number_lit, string_lit, dif, let, symbol, parenthetical, list, lambda, dstruct> {};
     struct pattern_atom : sor<number_lit, string_lit, symbol, var, parenthetical, list> {};
 
     template <typename atom> struct call : seq<plus<white>, atom> {};
@@ -183,7 +185,7 @@ namespace parse {
         seq<intuitionistic_or_expr<atom>, opt<intuitionistic_implies_op<atom>>> {};
     
     template <typename atom> struct such_that_expr;
-    template <typename atom> struct such_that_op : seq<ws, string<'?'>, ws, such_that_expr<atom>> {};
+    template <typename atom> struct such_that_op : seq<ws, string<'?'>, ws, intuitionistic_implies_expr<atom>> {};
     template <typename atom> struct such_that_expr : seq<intuitionistic_implies_expr<atom>, opt<such_that_op<atom>>> {};
     template <typename atom> struct cast_expr : 
         seq<such_that_expr<atom>, opt<seq<ws, string<'#'>, ws, intuitionistic_implies_expr<atom>>>> {};
@@ -448,6 +450,17 @@ namespace Diophant {
         }
     };
 
+    template <> struct eval_action<parse::rule> {
+        template <typename Input>
+        static void apply (const Input &in, Parser &eval) {
+            // NOTE for some reason, "in" gets on the stack, which is why we are taking the 
+            // third and second elements from the stack instead of the first and second. 
+            // This is a kludge and should be repaired eventually. 
+            eval.statements <<= statement {eval.machine.make_subject (eval.expr[2]), eval.expr[1]};
+            eval.expr = data::drop (eval.expr, 3);
+        }
+    };
+
     template <> struct eval_action<parse::let> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
@@ -459,17 +472,17 @@ namespace Diophant {
     template <> struct eval_action<parse::set> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            eval.statements <<= statement {eval.machine.make_subject (eval.expr[0]), eval.expr[1]};
+            eval.statements <<= statement {eval.machine.make_subject (eval.expr[1]), eval.expr[0]};
             eval.expr = data::rest (data::rest (eval.expr));
         }
     };
-
+/*
     template <> struct eval_action<parse::statement_separator> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.set ();
         }
-    };
+    };*/
 
     template <> struct eval_action<parse::program> {
         template <typename Input>
@@ -717,6 +730,6 @@ namespace Diophant {
     }
     
     void Parser::dif () {
-        expr = prepend (rest (rest (rest (expr))), make::dif (expr[0], expr[1], expr[2]));
+        expr = prepend (rest (rest (rest (expr))), make::dif (expr[2], expr[1], expr[0]));
     }
 }

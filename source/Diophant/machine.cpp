@@ -124,57 +124,60 @@ namespace Diophant {
         def (z, p, *this);
     }
 
+    Machine::Machine () {
+        
+        make::symbol ("Impossible", registered);
+        make::symbol ("Null", registered);
+        make::symbol ("Bool", registered);
+        make::symbol ("Intuit", registered);
+        make::symbol ("Sign", registered);
+        make::symbol ("N", registered);
+        make::symbol ("Z", registered);
+        make::symbol ("Q", registered);
+        make::symbol ("Float", registered);
+        make::symbol ("String", registered);
+        make::symbol ("Int", registered);
+        make::symbol ("Uint", registered);
+        make::symbol ("List", registered);
+        make::symbol ("Tuple", registered);
+        make::symbol ("Struct", registered);
+        make::symbol ("Array", registered);
+        
+        make::symbol ("null", registered);
+        make::symbol ("true", registered);
+        make::symbol ("false", registered);
+        make::symbol ("unknown", registered);
+        make::symbol ("positive", registered);
+        make::symbol ("negative", registered);
+        make::symbol ("zero", registered);
+        make::symbol ("infinity", registered);
+        
+        make::symbol ("!l", registered);
+        make::symbol ("!r", registered);
+        make::symbol ("++l", registered);
+        make::symbol ("--l", registered);
+        make::symbol ("^", registered);
+        make::symbol ("*", registered);
+        make::symbol ("%", registered);
+        make::symbol ("/", registered);
+        make::symbol ("/%", registered);
+        make::symbol ("<", registered);
+        make::symbol (">", registered);
+        make::symbol ("<=", registered);
+        make::symbol (">=", registered);
+        make::symbol ("==", registered);
+        make::symbol ("!=", registered);
+        make::symbol ("&&", registered);
+        make::symbol ("||", registered);
+        make::symbol ("=", registered);
+        make::symbol ("/=", registered);
+        make::symbol ("<==>", registered);
+        make::symbol (":", registered);
+        make::symbol ("&", registered);
+        make::symbol ("|", registered);
+    }
+
     void initialize (Machine &m) {
-        
-        make::symbol ("Impossible", m.registered);
-        make::symbol ("Null", m.registered);
-        make::symbol ("Bool", m.registered);
-        make::symbol ("Intuit", m.registered);
-        make::symbol ("Sign", m.registered);
-        make::symbol ("N", m.registered);
-        make::symbol ("Z", m.registered);
-        make::symbol ("Q", m.registered);
-        make::symbol ("Float", m.registered);
-        make::symbol ("String", m.registered);
-        make::symbol ("Int", m.registered);
-        make::symbol ("Uint", m.registered);
-        make::symbol ("List", m.registered);
-        make::symbol ("Tuple", m.registered);
-        make::symbol ("Struct", m.registered);
-        make::symbol ("Array", m.registered);
-        
-        make::symbol ("null", m.registered);
-        make::symbol ("true", m.registered);
-        make::symbol ("false", m.registered);
-        make::symbol ("unknown", m.registered);
-        make::symbol ("positive", m.registered);
-        make::symbol ("negative", m.registered);
-        make::symbol ("zero", m.registered);
-        make::symbol ("infinity", m.registered);
-        
-        make::symbol ("!l", m.registered);
-        make::symbol ("!r", m.registered);
-        make::symbol ("++l", m.registered);
-        make::symbol ("--l", m.registered);
-        make::symbol ("^", m.registered);
-        make::symbol ("*", m.registered);
-        make::symbol ("%", m.registered);
-        make::symbol ("/", m.registered);
-        make::symbol ("/%", m.registered);
-        make::symbol ("<", m.registered);
-        make::symbol (">", m.registered);
-        make::symbol ("<=", m.registered);
-        make::symbol (">=", m.registered);
-        make::symbol ("==", m.registered);
-        make::symbol ("!=", m.registered);
-        make::symbol ("&&", m.registered);
-        make::symbol ("||", m.registered);
-        make::symbol ("=", m.registered);
-        make::symbol ("/=", m.registered);
-        make::symbol ("<==>", m.registered);
-        make::symbol (":", m.registered);
-        make::symbol ("&", m.registered);
-        make::symbol ("|", m.registered);
         
         m.define (string {"_x == _x ? x:Value"}, string {"true"});
         m.define (string {"_x == _y ? x:Value & y:Value"}, string {"false"});

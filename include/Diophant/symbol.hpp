@@ -15,6 +15,24 @@ namespace Diophant {
     std::ostream &operator << (std::ostream &, Symbol);
     std::strong_ordering operator <=> (Symbol a, Symbol b);
     bool operator == (Symbol a, Symbol b);
+    /*
+    struct symbols {
+        symbol &operator [] (const std::string &);
+        
+        maybe<std::map<std::string, symbol>::iterator> find (const std::string &);
+        
+        // all new symbols are remembered in the main map. 
+        void update ();
+        
+        // delete new symbols. 
+        void revert () {
+            new_symbols = std::map<std::string, symbol> {};
+        }
+        
+    private:
+        std::map<std::string, symbol> registered;
+        std::map<std::string, symbol> new_symbols;
+    };*/
 }
 
 #endif
