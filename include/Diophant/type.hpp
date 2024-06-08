@@ -10,7 +10,7 @@ namespace Diophant {
     std::ostream &operator << (std::ostream &o, Type &);
     
     struct Machine;
-    intuit cast (Type, Expression, Machine &);
+    intuit cast (Type, Expression, const Machine &);
 
     intuitionistic_partial_ordering compare (Type &, Type &);
     

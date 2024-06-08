@@ -85,8 +85,8 @@ namespace parse {
     
     struct open_list : one<'['> {};
     struct close_list : one<']'> {};
-    struct list : seq<open_list, ws,
-            opt<seq<expression, ws, star<seq<one<','>, ws, expression, ws>>>>,
+    struct list : seq<open_list,
+            opt<seq<ws, expression, ws, star<seq<one<','>, ws, expression, ws>>>>, 
         close_list> {};
     
     struct entry : seq<symbol, ws, string<'-', '>'>, ws, expression> {};
@@ -187,11 +187,15 @@ namespace parse {
     template <typename atom> struct such_that_expr;
     template <typename atom> struct such_that_op : seq<ws, string<'?'>, ws, intuitionistic_implies_expr<atom>> {};
     template <typename atom> struct such_that_expr : seq<intuitionistic_implies_expr<atom>, opt<such_that_op<atom>>> {};
+    
+    template <typename atom> struct replace_op : seq<ws, string<'/', '.'>, ws, dstruct> {};
+    template <typename atom> struct replace_expr : seq<such_that_expr<atom>, opt<replace_op<atom>>> {};
+    
     template <typename atom> struct cast_expr : 
-        seq<such_that_expr<atom>, opt<seq<ws, string<'#'>, ws, intuitionistic_implies_expr<atom>>>> {};
+        seq<replace_expr<atom>, opt<seq<ws, string<'#'>, ws, intuitionistic_implies_expr<atom>>>> {};
     
     struct expression : cast_expr<expression_atom> {};
-    struct pattern : such_that_expr<pattern_atom> {};
+    struct pattern : replace_expr<pattern_atom> {};
     
     struct parse_expression : seq<ws, expression, ws, eof> {};
 
@@ -476,13 +480,13 @@ namespace Diophant {
             eval.expr = data::rest (data::rest (eval.expr));
         }
     };
-/*
+
     template <> struct eval_action<parse::statement_separator> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
             eval.set ();
         }
-    };*/
+    };
 
     template <> struct eval_action<parse::program> {
         template <typename Input>
@@ -697,25 +701,29 @@ namespace Diophant {
     }
 
     void Parser::open_list () {
-        back_expr = expr;
+        back_expr <<= expr;
         expr = data::stack<Expression> {};
     }
 
     void Parser::open_object () {
-        back_expr = expr;
+        back_expr <<= expr;
         expr = data::stack<Expression> {};
     }
 
     void Parser::close_list () {
-        expr = prepend (first (back_expr), make::list (expr));
+        std::cout << " * closing list " << expr << std::endl;
+        expr = data::prepend (first (back_expr), make::list (data::reverse (expr)));
         back_expr = rest (back_expr);
     }
 
     void Parser::close_object () {
         data::stack<entry<Expression, Expression>> m;
-        while (data::size (expr) > 0) m <<= entry<Expression, Expression> {first (rest (expr)), first (expr)};
+        while (data::size (expr) > 0) {
+            m <<= entry<Expression, Expression> {expr[1], expr[0]};
+            expr = rest (rest (expr));
+        }
         expr = data::prepend (first (back_expr), make::map (m));
-        back_expr = rest (expr);
+        back_expr = rest (back_expr);
     }
     
     void Parser::unary (char op) {

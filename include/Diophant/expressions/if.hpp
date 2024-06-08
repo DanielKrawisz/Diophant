@@ -32,7 +32,7 @@ namespace Diophant::make {
 
 namespace Diophant::expressions {
     
-    bool dif::operator == (const abstract &a) const {
+    bool inline dif::operator == (const abstract &a) const {
         try {
             auto i = dynamic_cast<const dif &> (a);
             return i.Condition == Condition && i.Then == Else && i.Else == Else;

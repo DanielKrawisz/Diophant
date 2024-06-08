@@ -9,6 +9,8 @@
 #include <Diophant/expressions/values.hpp>
 #include <Diophant/expressions/lambda.hpp>
 #include <Diophant/expressions/pattern.hpp>
+#include <Diophant/expressions/if.hpp>
+#include <Diophant/expressions/let.hpp>
 #include <data/io/unimplemented.hpp>
 
 namespace Diophant {
@@ -198,7 +200,6 @@ namespace Diophant {
         m.define (string {"`&&`"}, string {"Bool => Bool => Bool # and"});
         m.define (string {"`||`"}, string {"Bool => Bool => Bool # or"});
         
-        
     }
 
     // return the conflicting entry if there is one.
@@ -310,13 +311,17 @@ namespace Diophant {
     // the first step is to evaluate parts of the expression that require looking up
     // definitions in the machine. That means symbols and calls.
     Expression Machine::evaluate (Expression &x, data::set<expressions::symbol> fixed) {
+        std::cout << "  evaluate " << x << std::endl;
         auto p = x.get ();
         if (p == nullptr) return x;
 
         if (auto px = dynamic_cast<const expressions::symbol *> (p); px != nullptr) {
+            std::cout << "  is a symbol " << std::endl;
             if (fixed.contains (*px)) return x;
+            std::cout << "  is not fixed " << std::endl;
             auto v = this->definitions.find (*px);
             if (v == this->definitions.end ()) return x;
+            std::cout << "  is in dictionary " << std::endl;
             auto w = match_and_call (v->second, {});
             if (!bool (w)) return x;
             return *w;
@@ -377,6 +382,19 @@ namespace Diophant {
 
         auto p = x.get ();
 
+        if (auto pb = dynamic_cast<const expressions::binary_expression *> (p); pb != nullptr) {
+            auto left = evaluate (pb->left, m, fixed);
+            auto right = evaluate (pb->right, m, fixed);
+            // TODO check definitions
+            return left == pb->left && right == pb->right ? x : expressions::binary_expression::make (pb->op, left, right);
+        }
+
+        if (auto pu = dynamic_cast<const expressions::left_unary_expression *> (p); pu != nullptr) {
+            auto expr = evaluate (pu->expression, m, fixed);
+            // TODO check definitions
+            return expr == pu->expression ? x : expressions::left_unary_expression::make (pu->op, expr);
+        }
+
         if (auto pz = dynamic_cast<const expressions::list *> (p); pz != nullptr) {
             stack<Expression> evaluated;
             bool changed = false;
@@ -401,17 +419,16 @@ namespace Diophant {
             return changed ? make::map (evaluated) : x;
         }
 
-        if (auto pb = dynamic_cast<const expressions::binary_expression *> (p); pb != nullptr) {
-            auto left = evaluate (pb->left, m, fixed);
-            auto right = evaluate (pb->right, m, fixed);
-            // TODO check definitions
-            return left == pb->left && right == pb->right ? x : expressions::binary_expression::make (pb->op, left, right);
+        if (auto pif = dynamic_cast<const expressions::dif *> (p); pif != nullptr) {
+            auto cond = evaluate (pif->Condition, m, fixed);
+            if (auto bb = dynamic_cast<const expressions::boolean *> (cond.get ()); bb != nullptr) {
+                return bb->val ? evaluate (pif->Then, m, fixed) : evaluate (pif->Else, m, fixed);
+            } else throw exception {} << " if condition failed to evaluate to Bool: " << pif->Condition;
+            throw exception {} << " we don't evaluate if expressions yet";
         }
 
-        if (auto pu = dynamic_cast<const expressions::left_unary_expression *> (p); pu != nullptr) {
-            auto expr = evaluate (pu->expression, m, fixed);
-            // TODO check definitions
-            return expr == pu->expression ? x : expressions::left_unary_expression::make (pu->op, expr);
+        if (auto plet = dynamic_cast<const expressions::let *> (p); plet != nullptr) {
+            throw exception {} << " we don't evaluate let expressions yet";
         }
 
         return x;
@@ -423,6 +440,7 @@ namespace Diophant {
     };
 
     maybe<Expression> match_and_call (const Machine::overloads &o, stack<Expression> x) {
+        std::cout << "    match and call " << x << " against " << o << std::endl;
         for (const auto &e : o) {
             if (e.key.params.size () > x.size ()) return {};
             if (e.key.params.size () < x.size ()) continue;

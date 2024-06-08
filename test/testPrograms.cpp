@@ -13,6 +13,7 @@ namespace Diophant {
     
     void values_test_case (const string &expected, const string &program) {
         value result;
+        std::cout << "run program " << program << std::endl;
         EXPECT_NO_THROW (result = run (program));
         value expected_result {expected};
         EXPECT_TRUE (expected_result.valid ());
@@ -23,10 +24,12 @@ namespace Diophant {
         values_test_case ("1", "1");
         values_test_case ("1", "(@ x -> x) 1");
         values_test_case ("[1, 2, 3]", "[1, 2, 3]");
-        values_test_case ("3", "n -> 3; n");
-        values_test_case ("[true, false]", "eq _x _x ? x:Value -> true; _x == _y ? x:Value & y:Value -> false; [eq 5 5, eq 7 3]");
+        values_test_case ("3", "n := 3; n");
+        values_test_case ("17", "if true then 17 else 35");
+        values_test_case ("35", "if false then 17 else 35");
+        values_test_case ("[true, false]", "eq _x _x ? x:Value := true; _x == _y ? x:Value & y:Value := false; [eq 5 5, eq 7 3]");
         /*
-        test_case ("false", "!true");
+        test_case ("[false, true]", "not true := false; not false := true; ! := not [!true, !false]");
         test_case ("true", "!false");
         test_case ("false", "and false true");
         test_case ("true", "or false true");
@@ -38,9 +41,10 @@ namespace Diophant {
         test_case ("false", "1 < 2");*/
         //test_case ("13", "fib 0 = 0; fib 1 = 1; fib x:N = fib (x - 1) + fib (x - 2)")
     }
-    
-    void cast_test_case (const string &type, const string &expr, bool valid = true) {
-        
+    /*
+    void cast_test_case (const string &T, const string &expr, bool valid = true) {
+        Machine m {};
+        EXPECT_TRUE (cast (type {T}, expression {expr}, m) == yes);
     }
     
     TEST (ProgramTest, TestCast) {
@@ -55,7 +59,7 @@ namespace Diophant {
         cast_test_case ("Intuit", "unknown");
         cast_test_case ("N", "0");
         cast_test_case ("N", "1");
-    }
+    }*/
     /*
     void program_test_case (const string &expected, const string &program) {
         std::cout << "testing program " << program << std::endl;
