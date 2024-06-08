@@ -7,16 +7,16 @@
 namespace Diophant {
 
     struct Parser {
+        Expression read_expression (const std::string &);
 
         void read_line (const std::string &);
-        void read_expression (const std::string &);
-        void read_value (const std::string &);
 
-        Parser (handler<Expression &> w) : write {w} {
-            initialize ();
-        }
+        Parser () {}
 
         void initialize ();
+
+        bool runnable () const;
+        Expression run ();
 
         Machine machine {};
 
@@ -40,8 +40,6 @@ namespace Diophant {
         // whether we are reading a sequence of symbols for a
         // lambda now. 
         bool reading_lambda_vars {false};
-
-        handler<Expression &> write;
         
         void define (string &, Expression &);
 

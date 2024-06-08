@@ -55,13 +55,8 @@ namespace Diophant {
     
     // parse some code and read in an expression.
     expression::expression (const string &x) {
-        maybe<expression> expr;
-        Parser p {[&expr] (Expression &e) {
-            expr = e;
-        }};
-        p.read_expression (x);
-        if (!bool (expr)) throw exception {} << "invalid expression: " << x;
-        *this = *expr;
+        Parser p {};
+        *this = p.read_expression (x);
     }
 }
 

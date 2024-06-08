@@ -14,9 +14,7 @@ int main (int args, char **arg) {
 
     std::cout << "\nDiophant engaged! " << std::endl;
 
-    Parser eval {[] (Expression &x) {
-        std::cout << "\n result: " << std::string (x) << std::endl;
-    }};
+    Parser eval {};
     
     initialize (eval.machine);
     
@@ -30,6 +28,7 @@ int main (int args, char **arg) {
             // out of it and then evaluate it.
             try {
                 eval.read_line (*input);
+                if (eval.runnable ()) std::cout << "\n result: " << eval.run () << std::endl;
             } catch (data::exception &e) {
                 std::cout << "Exception caught: " << e.what () << "!" << std::endl;
             }

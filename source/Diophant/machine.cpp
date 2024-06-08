@@ -311,17 +311,13 @@ namespace Diophant {
     // the first step is to evaluate parts of the expression that require looking up
     // definitions in the machine. That means symbols and calls.
     Expression Machine::evaluate (Expression &x, data::set<expressions::symbol> fixed) {
-        std::cout << "  evaluate " << x << std::endl;
         auto p = x.get ();
         if (p == nullptr) return x;
 
         if (auto px = dynamic_cast<const expressions::symbol *> (p); px != nullptr) {
-            std::cout << "  is a symbol " << std::endl;
             if (fixed.contains (*px)) return x;
-            std::cout << "  is not fixed " << std::endl;
             auto v = this->definitions.find (*px);
             if (v == this->definitions.end ()) return x;
-            std::cout << "  is in dictionary " << std::endl;
             auto w = match_and_call (v->second, {});
             if (!bool (w)) return x;
             return *w;
@@ -440,7 +436,6 @@ namespace Diophant {
     };
 
     maybe<Expression> match_and_call (const Machine::overloads &o, stack<Expression> x) {
-        std::cout << "    match and call " << x << " against " << o << std::endl;
         for (const auto &e : o) {
             if (e.key.params.size () > x.size ()) return {};
             if (e.key.params.size () < x.size ()) continue;

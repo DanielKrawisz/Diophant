@@ -13,7 +13,7 @@ namespace Diophant {
     
     void test_case (const string &program, bool valid = true) {
         Parser *eval {nullptr};
-        EXPECT_NO_THROW (eval = new Parser {[] (Expression &x) {}});
+        EXPECT_NO_THROW (eval = new Parser {});
         
         if (valid) {
             EXPECT_NO_THROW (eval->read_line (program));

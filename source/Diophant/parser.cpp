@@ -481,42 +481,20 @@ namespace Diophant {
         }
     };
 
-    template <> struct eval_action<parse::statement_separator> {
-        template <typename Input>
-        static void apply (const Input &in, Parser &eval) {
-            eval.set ();
-        }
-    };
-
-    template <> struct eval_action<parse::program> {
-        template <typename Input>
-        static void apply (const Input &in, Parser &eval) {
-            if (data::size (eval.expr) >= 1) {
-                auto v = evaluate (eval.expr.first (), eval.machine);
-                eval.write (v);
-                eval.expr = data::stack<Expression> {};
-            }
-        }
-    };
-
-    template <> struct eval_action<parse::parse_expression> {
-        template <typename Input>
-        static void apply (const Input &in, Parser &eval) {
-            if (data::size (eval.expr) >= 1) {
-                eval.write (eval.expr.first ());
-                eval.expr = data::stack<Expression> {};
-            }
-        }
-    };
-
     void Parser::read_line (const std::string &in) {
         if (!tao::pegtl::parse<parse::program, Diophant::eval_action> (tao::pegtl::memory_input<> {in, "expression"}, *this))
             throw exception {} << "could not parse line \"" << in << "\"";
     }
 
-    void Parser::read_expression (const std::string &in) {
+    Expression Parser::read_expression (const std::string &in) {
         if (!tao::pegtl::parse<parse::parse_expression, Diophant::eval_action> (tao::pegtl::memory_input<> {in, "expression"}, *this))
             throw exception {} << "could not parse expression \"" << in << "\"";
+
+        if (!runnable () || statements.size () != 0) throw exception {} << "not a valid program";
+
+        auto result = first (expr);
+        expr = {};
+        return result;
     }
 
     void Parser::initialize () {
@@ -711,8 +689,7 @@ namespace Diophant {
     }
 
     void Parser::close_list () {
-        std::cout << " * closing list " << expr << std::endl;
-        expr = data::prepend (first (back_expr), make::list (data::reverse (expr)));
+        expr = data::prepend (first (back_expr), make::list (expr));
         back_expr = rest (back_expr);
     }
 
@@ -738,6 +715,24 @@ namespace Diophant {
     }
     
     void Parser::dif () {
-        expr = prepend (rest (rest (rest (expr))), make::dif (expr[2], expr[1], expr[0]));
+        // NOTE another kludge here.
+        expr = prepend (rest (rest (rest (expr))), make::dif (expr[4], expr[2], expr[0]));
+    }
+
+    bool Parser::runnable () const {
+        // NOTE the commented clause ought to work but it doesn't due to extra items being pushed on the stack.
+        return back_expr.size () == 0 && back_statements.size () == 0 /*&& expr.size () == 1*/ && !reading_lambda_vars;
+    }
+
+    Expression Parser::run () {
+        if (!runnable ()) throw exception {} << "not in a valid state to run program";
+
+        statements = data::reverse (statements);
+        while (statements.size () > 0) set ();
+
+        Expression result = evaluate (first (expr), machine);
+        expr = {};
+
+        return result;
     }
 }
