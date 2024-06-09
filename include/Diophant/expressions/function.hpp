@@ -5,23 +5,61 @@
 #include <Diophant/expression.hpp>
 #include <Diophant/expressions/symbol.hpp>
 #include <Diophant/replace.hpp>
+#include <Diophant/type.hpp>
 
 namespace Diophant::expressions {
     
+    template <typename fun> signature {
+        type operator * ();
+    };
+    
+    template <> signature<void> {
+        type operator * ();
+    };
+    
+    template <> signature<bool> {
+        type operator * ();
+    };
+    
+    template <> signature<double> {
+        type operator * ();
+    };
+    
+    template <> signature<data::N> {
+        type operator * ();
+    };
+    
+    template <> signature<data::string> {
+        type operator * ();
+    };
+    
+    template <uint32 u> signature<data::array<N, u>> {
+        type operator * ();
+    };
+    
+    template <typename t> signature<data::stack<t>> {
+        type operator * ();
+    };
+    
+    template <typename... t> signature<std::tuple<t...>> {
+        type operator * ();
+    };
+    
+    template <typename r, typename v, typename b, typename... t> signature<r (v, b, t...)> {
+        type operator * () {
+            return make::intuitionistic_implies (*signature<v> {}, *signature<r, (b, t...)> {});
+        }
+    };
+    
+    template <typename r, typename v> signature<r (v)> {
+        type operator * () {
+            return make::intuitionistic_implies (*signature<v> {}, *signature<r> {} {});
+        }
+    };
+    
     struct function final : abstract {
-        enum types : char {
-            Null = 0, 
-            Bool = 1, 
-            N = 2, 
-            Z = 3, 
-            Q = 4,
-            Float = 5,
-            String = 6,
-            List = 8
-        };
-        
-        cross<types> Signature;
-        function<void *(void *[])> Function;
+        Type Signature;
+        data::function<void *(void *[])> Fun;
         
         bool operator == (const abstract &) const final override;
         

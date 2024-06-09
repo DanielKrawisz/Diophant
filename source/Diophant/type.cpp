@@ -2,6 +2,7 @@
 #include <Diophant/type.hpp>
 #include <Diophant/machine.hpp>
 #include <Diophant/value.hpp>
+#include <Diophant/make.hpp>
 #include <Diophant/expressions/symbol.hpp>
 #include <Diophant/expressions/values.hpp>
 #include <Diophant/expressions/apply.hpp>
@@ -9,6 +10,22 @@
 #include <Diophant/expressions/pattern.hpp>
 
 namespace Diophant {
+    
+    Type type::Z (const data::N &n) {
+        return make::call ((*symbols ())["Z"], make::natural (n));
+    }
+    
+    Type type::List (Type &t) {
+        return make::call ((*symbols ())["List"], t);
+    }
+    
+    Type type::Tuple (data::stack<Type> x) {
+        return make::list (x);
+    }
+    
+    Type type::Array (Type &t, uint32 size) {
+        return make::call (make::call ((*symbols ())["Array"], t), make::natural (size));
+    }
     
     intuit cast (Type t, Expression expr, const Machine &m) {
         const auto tp = t.get ();

@@ -41,6 +41,7 @@ namespace Diophant {
     
     value run (const string &x) {
         Parser p {};
+        initialize (p.machine);
         p.read_line (x);
         auto expr = p.run ();
         value result {expr};

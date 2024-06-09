@@ -25,10 +25,10 @@ namespace Diophant {
         values_test_case ("1", "(@ x -> x) 1");
         values_test_case ("[1, 2, 3]", "[1, 2, 3]");
         values_test_case ("3", "n := 3; n");
-        //values_test_case ("[true, false]", "eq _x _x ? x:Value := true; _x == _y ? x:Value & y:Value := false; [eq 5 5, eq 7 3]");
-        /*
         values_test_case ("17", "if true then 17 else 35");
         values_test_case ("35", "if false then 17 else 35");
+        //values_test_case ("[true, false]", "eq _x _x ? x:Value := true; _x == _y ? x:Value & y:Value := false; [eq 5 5, eq 7 3]");
+        /*
         values_test_case ("[false, true]", "not true := false; not false := true; ! := not [!true, !false]");
         values_test_case ("true", "!false");
         values_test_case ("false", "and false true");

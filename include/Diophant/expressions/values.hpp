@@ -51,7 +51,7 @@ namespace Diophant::make {
     }
     
     Expression inline list (data::stack<Expression> z) {
-        return expressions::list::make (cross<expression> (data::reverse (z)));
+        return expressions::list::make (cross<expression> (z));
     };
     
     Expression inline map (data::stack<entry<Expression, Expression>> z) {
@@ -69,7 +69,7 @@ namespace Diophant::expressions {
     }
     
     std::ostream inline &write (std::ostream &o, bool b) {
-        return o << std::boolalpha << b;
+        return o << '<' << std::boolalpha << b << '>';
     }
     
     std::ostream inline &write (std::ostream &o, const data::Q &q) {

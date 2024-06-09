@@ -7,9 +7,11 @@
 namespace Diophant::expressions {
     
     struct symbol final: abstract {
-        const std::string &name;
+        const std::string name;
         
-        static const ptr<const symbol> &make (const std::string &, symbols &);
+        static Symbol make (const std::string &x, symbols &z) {
+            return z[x];
+        }
         
         std::ostream &write (std::ostream &) const override;
 

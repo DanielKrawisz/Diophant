@@ -129,7 +129,7 @@ namespace Diophant {
     Machine::Machine () {
         
         make::symbol ("Impossible", registered);
-        make::symbol ("Null", registered);
+        make::symbol ("Void", registered);
         make::symbol ("Bool", registered);
         make::symbol ("Intuit", registered);
         make::symbol ("Sign", registered);
@@ -180,7 +180,11 @@ namespace Diophant {
     }
 
     void initialize (Machine &m) {
+        type::symbols () = &m.registered;
         
+        m.define (string {"true"}, make::boolean (true));
+        m.define (string {"false"}, make::boolean (false));
+        /*
         m.define (string {"_x == _x ? x:Value"}, string {"true"});
         m.define (string {"_x == _y ? x:Value & y:Value"}, string {"false"});
         m.define (string {"not true"}, string {"false"});
@@ -198,7 +202,9 @@ namespace Diophant {
         m.define (string {"nor false false"}, string {"true"});
         m.define (string {"nor _x _y ? x:Bool & y:Bool"}, string {"false"});
         m.define (string {"`&&`"}, string {"Bool => Bool => Bool # and"});
-        m.define (string {"`||`"}, string {"Bool => Bool => Bool # or"});
+        m.define (string {"`||`"}, string {"Bool => Bool => Bool # or"});*/
+        
+        m.registered.update ();
         
     }
 
@@ -289,8 +295,8 @@ namespace Diophant {
 
         if (auto pb = std::dynamic_pointer_cast<const expressions::binary_expression> (x); pb != nullptr) {
             auto v = registered.find (binary_operator (pb->op));
-            if (v == registered.end ()) throw exception {} << " unknown binary operator " << binary_operator (pb->op);
-            subject x (v->second);
+            if (! bool (v)) throw exception {} << " unknown binary operator " << binary_operator (pb->op);
+            subject x (v);
             x.parameters.params.resize (2);
             x.parameters.params[0] = pb->left;
             x.parameters.params[1] = pb->right;
@@ -319,8 +325,7 @@ namespace Diophant {
             auto v = this->definitions.find (*px);
             if (v == this->definitions.end ()) return x;
             auto w = match_and_call (v->second, {});
-            if (!bool (w)) return x;
-            return *w;
+            return bool (w) ? *w : x;
         }
 
         if (auto pc = dynamic_cast<const expressions::call *> (p); pc != nullptr) {
@@ -420,7 +425,6 @@ namespace Diophant {
             if (auto bb = dynamic_cast<const expressions::boolean *> (cond.get ()); bb != nullptr) {
                 return bb->val ? evaluate (pif->Then, m, fixed) : evaluate (pif->Else, m, fixed);
             } else throw exception {} << " if condition failed to evaluate to Bool: " << pif->Condition;
-            throw exception {} << " we don't evaluate if expressions yet";
         }
 
         if (auto plet = dynamic_cast<const expressions::let *> (p); plet != nullptr) {
