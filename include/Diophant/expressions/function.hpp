@@ -8,109 +8,50 @@
 #include <Diophant/type.hpp>
 
 namespace Diophant::expressions {
-    
-    template <typename fun> signature {
-        type operator * ();
-    };
-    
-    template <> signature<void> {
-        type operator * ();
-    };
-    
-    template <> signature<bool> {
-        type operator * ();
-    };
-    
-    template <> signature<double> {
-        type operator * ();
-    };
-    
-    template <> signature<data::N> {
-        type operator * ();
-    };
-    
-    template <> signature<data::string> {
-        type operator * ();
-    };
-    
-    template <uint32 u> signature<data::array<N, u>> {
-        type operator * ();
-    };
-    
-    template <typename t> signature<data::stack<t>> {
-        type operator * ();
-    };
-    
-    template <typename... t> signature<std::tuple<t...>> {
-        type operator * ();
-    };
-    
-    template <typename r, typename v, typename b, typename... t> signature<r (v, b, t...)> {
-        type operator * () {
-            return make::intuitionistic_implies (*signature<v> {}, *signature<r, (b, t...)> {});
-        }
-    };
-    
-    template <typename r, typename v> signature<r (v)> {
-        type operator * () {
-            return make::intuitionistic_implies (*signature<v> {}, *signature<r> {} {});
-        }
-    };
-    
-    struct function final : abstract {
-        Type Signature;
-        data::function<void *(void *[])> Fun;
-        
-        bool operator == (const abstract &) const final override;
-        
+
+    struct function : abstract {
+        virtual Type signature () const = 0;
+        virtual Expression operator () (data::list<Expression>) const = 0;
+
         std::ostream &write (std::ostream &o) const override {
-            auto b = Signature.begin ();
-            write (o, *b) << "(";
-            b++;
-            if (b != Signature.end ())
-                while (true) {
-                    write (o, *b);
-                    b++;
-                    if (b == Signature.end ()) break;
-                    o << ", ";
-                }
-            return o << ")";
+            return o << '<' << signature () << '>';
         }
-        
-        static std::ostream &write (std::ostream &o, types t) {
-            switch (t & 7) {
-                case (Null): {
-                    o << "Null";
-                } break;
-                case (Bool): {
-                    o << "Bool";
-                } break;
-                case (N): {
-                    o << "N";
-                } break;
-                case (Z): {
-                    o << "Z";
-                } break;
-                case (Q): {
-                    o << "Q";
-                } break;
-                case (Float): {
-                    o << "Float";
-                } break;
-                case (String): {
-                    o << "String";
-                } break;
-                default: throw exception {} << "invalid type";
-            }
-            
-            return t & 8 ? o << "[] " : o << " *";
-        }
+
+        uint32 number_of_args () const;
     };
-        
-    bool inline function::operator == (const abstract &x) const {
-        return static_cast<const abstract *> (this) == &x;
-    }
+
+    template <typename func> struct built_in;
+
+    template <typename T> struct signature;
+
+    template <typename Return, typename Arg> struct signature<Return (Arg)> {
+        Type operator * () const;
+    };
+
+    template <typename Return, typename Arg1, typename Arg2, typename... Args> struct signature<Return (Arg1, Arg2, Args...)> {
+        Type operator * () const;
+    };
+
+    template <typename Return, typename... Args>
+    struct built_in<Return (Args...)> final : function {
+        Type signature () const override {
+            return *expressions::signature<Return (Args...)> {};
+        }
+
+        Expression operator () (data::list<Expression>) const override;
+        bool operator == (const abstract &) const final override;
+
+        built_in (Return (*f) (Args...));
+    };
     
+}
+
+namespace Diophant::make {
+    template <typename Return, typename... Args>
+    Expression built_in_function (Return (*f) (Args...)) {
+        return Diophant::expression
+            {std::static_pointer_cast<const expressions::abstract> (std::make_shared<expressions::built_in<Return (Args...)>> (f))};
+    }
 }
 
 #endif

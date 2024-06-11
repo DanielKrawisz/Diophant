@@ -37,9 +37,12 @@ namespace Diophant {
         
         if (auto b = dynamic_cast<const expressions::lambda *> (x); b != nullptr) 
             return valid_expr (b->body);
-        
-        if (auto b = dynamic_cast<const expressions::call *> (x); b != nullptr) 
-            return valid_expr (b->function) && valid_expr (b->argument);
+
+        if (auto b = dynamic_cast<const expressions::call *> (x); b != nullptr) {
+            if (!valid_expr (b->function)) return false;
+            for (const auto &z : b->arguments) if (!valid_expr (z)) return false;
+            return true;
+        }
         
         if (auto b = dynamic_cast<const expressions::symbol *> (x); b != nullptr)
             return true;

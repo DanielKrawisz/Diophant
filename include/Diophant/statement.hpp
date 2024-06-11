@@ -19,7 +19,7 @@ namespace Diophant {
         type such_that;
 
         parameters (): params {}, such_that {} {}
-        parameters (stack<Expression> z, Type st = {});
+        parameters (list<Expression> z, Type st = {});
         
         bool operator == (const parameters &) const;
 

@@ -11,7 +11,7 @@
 #include <Diophant/expressions/pattern.hpp>
 #include <Diophant/expressions/if.hpp>
 #include <Diophant/expressions/let.hpp>
-#include <data/io/unimplemented.hpp>
+#include <Diophant/expressions/function.hpp>
 
 namespace Diophant {
 
@@ -50,7 +50,7 @@ namespace Diophant {
         return o << "\n}";
     }
 
-    parameters::parameters (stack<Expression> z, Type st) {
+    parameters::parameters (list<Expression> z, Type st) {
         params.resize (z.size ());
 
         for (auto &p : params) {
@@ -77,7 +77,7 @@ namespace Diophant {
         return replace (p.such_that, *r);
     }
 
-    maybe<replacements> match (const parameters &p, stack<Expression> x) {
+    maybe<replacements> match (const parameters &p, list<Expression> x) {
         if (p.params.size () != data::size (x)) return {};
         
         /*
@@ -184,6 +184,8 @@ namespace Diophant {
         
         m.define (string {"true"}, make::boolean (true));
         m.define (string {"false"}, make::boolean (false));
+        m.define (string {"`+`"}, make::built_in_function<data::N, const data::N &, const data::N &> (&plus_N));
+        m.define (string {"`*`"}, make::built_in_function<data::N, const data::N &, const data::N &> (&times_N));
         /*
         m.define (string {"_x == _x ? x:Value"}, string {"true"});
         m.define (string {"_x == _y ? x:Value & y:Value"}, string {"false"});
@@ -206,6 +208,17 @@ namespace Diophant {
         
         m.registered.update ();
         
+    }
+
+    Expression eval (Expression &x, Machine &m, data::set<expressions::symbol> fixed) {
+        // evaluate again and again until the result doesn't change
+        expression last = x;
+        int i = 0;
+        while (true) {
+            expression next = m.evaluate (last, fixed);
+            if (next == last) return last;
+            last = next;
+        }
     }
 
     // return the conflicting entry if there is one.
@@ -269,17 +282,17 @@ namespace Diophant {
         if (auto px = std::dynamic_pointer_cast<const expressions::symbol> (x); px != nullptr)
             return subject (px);
 
-        if (auto pc = std::dynamic_pointer_cast<const expressions::call> (x); pc != nullptr) {
-            expression fun = pc->function;
-            stack<Expression> arguments {pc->argument};
+        if (auto pa = std::dynamic_pointer_cast<const expressions::call> (x); pa != nullptr) {
+            expression fun = pa->function;
+            list<Expression> arguments = pa->arguments;
 
             while (true) {
                 if (const auto fx = std::dynamic_pointer_cast<const expressions::symbol> (fun); bool (fx))
-                    return subject {fx, arguments};
+                    return subject {fx, parameters {arguments}};
 
-                if (const auto fc = std::dynamic_pointer_cast<const expressions::call> (fun); bool (fc)) {
-                    fun = fc->function;
-                    arguments <<= fc->argument;
+                if (const auto fa = std::dynamic_pointer_cast<const expressions::call> (fun); bool (fa)) {
+                    fun = fa->function;
+                    arguments = fa->arguments + arguments;
                     continue;
                 }
 
@@ -310,12 +323,8 @@ namespace Diophant {
         throw exception {} << "cannot define " << x;
     }
 
-    maybe<Expression> match_and_call (const Machine::overloads &o, stack<Expression> x);
+    maybe<Expression> match_and_call (const Machine::overloads &o, list<Expression> x);
 
-    Expression evaluate_second_step (Machine &m, Expression &x, data::set<expressions::symbol> fixed);
-
-    // the first step is to evaluate parts of the expression that require looking up
-    // definitions in the machine. That means symbols and calls.
     Expression Machine::evaluate (Expression &x, data::set<expressions::symbol> fixed) {
         auto p = x.get ();
         if (p == nullptr) return x;
@@ -328,79 +337,59 @@ namespace Diophant {
             return bool (w) ? *w : x;
         }
 
-        if (auto pc = dynamic_cast<const expressions::call *> (p); pc != nullptr) {
-            // first evaluate function and argument.
-            expression fun = Diophant::evaluate (pc->function, *this, fixed);
-            expression arg = Diophant::evaluate (pc->argument, *this, fixed);
+        if (auto pa = dynamic_cast<const expressions::call *> (p); pa != nullptr) {
+            expression fun = pa->function;
 
-            stack<Expression> args {arg};
-            symbol q = nullptr;
+            auto eval_arg = [this, &fixed] (Expression &x) -> Expression {
+                return eval (x, *this, fixed);
+            };
+
+            list<Expression> args = data::for_each (eval_arg, pa->arguments);
 
             while (true) {
+
+                // check for apply
+                if (auto ca = std::dynamic_pointer_cast<const expressions::call> (fun); ca != nullptr) {
+                    fun = ca->function;
+                    args = data::for_each (eval_arg, ca->arguments) + args;
+
                 // check for lambda
-                if (auto l = std::dynamic_pointer_cast<const expressions::lambda> (fun); l != nullptr) {
-                    fun = (*l) (data::first (args));
+                } else if (auto la = std::dynamic_pointer_cast<const expressions::lambda> (fun); la != nullptr) {
+                    fun = (*la) (data::first (args));
                     args = data::rest (args);
-                    if (data::size (args) == 0) {
-                        return Diophant::evaluate (fun, *this, fixed);
-                    }
-                }
-                
+                    if (data::size (args) == 0) return eval (fun, *this, fixed);
+
+                // check for function
+                } else if (auto fa = std::dynamic_pointer_cast<const expressions::function> (fun); fa != nullptr) {
+                    uint32 na = fa->number_of_args ();
+                    if (data::size (args) >= na) {
+                        fun = fa->operator () (data::take (args, na));
+                        args = data::drop (args, na);
+                    } else break;
+
                 // check for symbol
-                if (q = std::dynamic_pointer_cast<const expressions::symbol> (fun); q != nullptr) {
-                    if (fixed.contains (*q)) goto end_call;
-                    break;
+                } else if (symbol q = std::dynamic_pointer_cast<const expressions::symbol> (fun); q != nullptr) {
+                    if (fixed.contains (*q)) break;
+                    auto v = this->definitions.find (*q);
+                    if (v == this->definitions.end ()) break;
+                    auto w = match_and_call (v->second, args);
+                    if (!bool (w)) break;
+                    return *w;
                 }
 
-                // check for call
-                if (auto fc = std::dynamic_pointer_cast<const expressions::call> (fun); fc != nullptr) {
-                    fun = fc->function;
-                    args <<= Diophant::evaluate (fc->argument, *this, fixed);
-                    continue;
-                }
-
-                // Something we can't work with is here so we return.
-                goto end_call;
-            }
-
-            // look up what we got in the dictionary here.
-            {
-                auto v = this->definitions.find (*q);
-                if (v == this->definitions.end ()) goto end_call;
-                auto w = match_and_call (v->second, args);
-                if (!bool (w)) goto end_call;
-                return *w;
+                auto result = eval (fun, *this, fixed);
+                if (result == fun) break;
             }
 
             end_call:
-            return fun == pc->function && arg == pc->argument ? x : make::call (fun, arg);
-        }
-
-        return evaluate_second_step (*this, x, fixed);
-    }
-
-    Expression evaluate_second_step (Machine &m, Expression &x, data::set<expressions::symbol> fixed) {
-
-        auto p = x.get ();
-
-        if (auto pb = dynamic_cast<const expressions::binary_expression *> (p); pb != nullptr) {
-            auto left = evaluate (pb->left, m, fixed);
-            auto right = evaluate (pb->right, m, fixed);
-            // TODO check definitions
-            return left == pb->left && right == pb->right ? x : expressions::binary_expression::make (pb->op, left, right);
-        }
-
-        if (auto pu = dynamic_cast<const expressions::left_unary_expression *> (p); pu != nullptr) {
-            auto expr = evaluate (pu->expression, m, fixed);
-            // TODO check definitions
-            return expr == pu->expression ? x : expressions::left_unary_expression::make (pu->op, expr);
+            return fun == pa->function && args == pa->arguments ? x : make::call (fun, args);
         }
 
         if (auto pz = dynamic_cast<const expressions::list *> (p); pz != nullptr) {
             stack<Expression> evaluated;
             bool changed = false;
             for (Expression &e : pz->val) {
-                Expression ex = evaluate (e, m, fixed);
+                Expression ex = eval (e, *this, fixed);
                 if (ex != e) changed = true;
                 evaluated <<= ex;
             }
@@ -412,7 +401,7 @@ namespace Diophant {
             stack<entry<Expression, Expression>> evaluated;
             bool changed = false;
             for (const entry<Expression, Expression> &e : pm->val) {
-                Expression ex = evaluate (e.Value, m, fixed);
+                Expression ex = eval (e.Value, *this, fixed);
                 if (ex != e.Value) changed = true;
                 evaluated <<= entry<Expression, Expression> {e.Key, ex};
             }
@@ -421,9 +410,9 @@ namespace Diophant {
         }
 
         if (auto pif = dynamic_cast<const expressions::dif *> (p); pif != nullptr) {
-            auto cond = evaluate (pif->Condition, m, fixed);
+            auto cond = eval (pif->Condition, *this, fixed);
             if (auto bb = dynamic_cast<const expressions::boolean *> (cond.get ()); bb != nullptr) {
-                return bb->val ? evaluate (pif->Then, m, fixed) : evaluate (pif->Else, m, fixed);
+                return bb->val ? eval (pif->Then, *this, fixed) : eval (pif->Else, *this, fixed);
             } else throw exception {} << " if condition failed to evaluate to Bool: " << pif->Condition;
         }
 
@@ -439,12 +428,12 @@ namespace Diophant {
         Expression &predicate;
     };
 
-    maybe<Expression> match_and_call (const Machine::overloads &o, stack<Expression> x) {
+    maybe<Expression> match_and_call (const Machine::overloads &o, list<Expression> x) {
         for (const auto &e : o) {
             if (e.key.params.size () > x.size ()) return {};
             if (e.key.params.size () < x.size ()) continue;
             
-            auto r = match (e.key, x);
+            auto r = Diophant::match (e.key, x);
             if (!r) continue;
 
             if (bool (e.value)) return replace (*e.value, *r);

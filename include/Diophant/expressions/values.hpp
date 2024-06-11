@@ -119,4 +119,16 @@ namespace Diophant::expressions {
     }
 }
 
+namespace Diophant {
+
+    data::N inline plus_N (const data::N &a, const data::N &b) {
+        return a + b;
+    }
+
+    data::N inline times_N (const data::N &a, const data::N &b) {
+        return a * b;
+    }
+
+}
+
 #endif

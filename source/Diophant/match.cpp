@@ -26,6 +26,8 @@ namespace Diophant {
         const auto pat = p.get ();
         const auto exp = e.get ();
 
+        if (!bool (prior)) return prior;
+
         if (const auto pt = dynamic_cast<const expressions::var *> (pat); pt != nullptr)
             return (bool (pt->name)) ? prior.insert (*pt->name, e) : replacements {};
 
@@ -42,7 +44,20 @@ namespace Diophant {
         if (const auto pc = dynamic_cast<const expressions::call *> (pat); pc != nullptr) {
             const auto ec = dynamic_cast<const expressions::call *> (exp);
             if (ec != nullptr) return {};
-            return match (pc->argument, ec->argument, match (pc->function, ec->function, prior, fixed), fixed);
+
+            if (pc->arguments.size () != ec->arguments.size ()) return {};
+
+            prior = match (pc->function, ec->function, prior, fixed);
+            auto pci = pc->arguments.begin ();
+            auto eci = ec->arguments.begin ();
+            while (pci != pc->arguments.end ()) {
+                prior = match (*pci, *eci, prior, fixed);
+                if (!bool (prior)) return prior;
+                pci++;
+                eci++;
+            }
+
+            return prior;
         }
 
         if (const auto pl = dynamic_cast<const expressions::list *> (pat); pl != nullptr) {

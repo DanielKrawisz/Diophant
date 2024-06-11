@@ -20,7 +20,7 @@ namespace Diophant::make {
     Expression map (data::stack<data::entry<Expression, Expression>> x);
     Expression lambda (stack<Symbol>, Expression &);
 
-    Expression call (Expression &, Expression &);
+    Expression call (Expression &, data::list<Expression>);
     Expression let (data::stack<statement>, Expression);
     Expression dif (Expression, Expression, Expression);
 
@@ -55,7 +55,8 @@ namespace Diophant::make {
     Expression intuitionistic_or (Expression &, Expression &);
     Expression intuitionistic_implies (Expression &, Expression &);
     
-    Expression element (Expression &, Expression &);
+    template <typename Return, typename... Args>
+    Expression built_in_function (Return (*f) (Args...));
 
 }
 

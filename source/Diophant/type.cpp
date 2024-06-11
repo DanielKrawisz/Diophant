@@ -12,11 +12,11 @@
 namespace Diophant {
     
     Type type::Z (const data::N &n) {
-        return make::call ((*symbols ())["Z"], make::natural (n));
+        return make::call ((*symbols ())["Z"], {make::natural (n)});
     }
     
     Type type::List (Type &t) {
-        return make::call ((*symbols ())["List"], t);
+        return make::call ((*symbols ())["List"], {t});
     }
     
     Type type::Tuple (data::stack<Type> x) {
@@ -24,7 +24,7 @@ namespace Diophant {
     }
     
     Type type::Array (Type &t, uint32 size) {
-        return make::call (make::call ((*symbols ())["Array"], t), make::natural (size));
+        return make::call (make::call ((*symbols ())["Array"], t), {make::natural (size)});
     }
     
     intuit cast (Type t, Expression expr, const Machine &m) {
@@ -54,12 +54,12 @@ namespace Diophant {
         if (const auto ctp = dynamic_cast<const expressions::call *> (tp); ctp != nullptr) {
             
             if (const auto xxx = dynamic_cast<const expressions::symbol *> (ctp->function.get ())) {
-                if (xxx->name == "List") {
+                if (xxx->name == "List" && ctp->arguments.size () == 1) {
                     if (const auto lep = dynamic_cast<const expressions::list *> (ep); lep != nullptr) {
                         intuit return_value = yes;
             
                         for (Expression &ex : lep->val) {
-                            auto castable = cast (type {ctp->argument}, ex, m);
+                            auto castable = cast (type {ctp->arguments.first ()}, ex, m);
                             if (castable == no) return no;
                             if (castable == unknown) return_value = unknown;
                         }
