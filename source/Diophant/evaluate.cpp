@@ -46,7 +46,7 @@ namespace Diophant {
                 evaluated <<= ex;
             }
 
-            return make::list (evaluated);
+            return make::list (reverse (evaluated));
         }
 
         if (auto pm = dynamic_cast<const expressions::map *> (p); pm != nullptr) {

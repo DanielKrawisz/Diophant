@@ -689,16 +689,19 @@ namespace Diophant {
     }
 
     void Parser::close_list () {
-        expr = data::prepend (first (back_expr), make::list (expr));
+        auto lz = make::list (reverse (expr));
+        expr = data::prepend (first (back_expr), lz);
         back_expr = rest (back_expr);
     }
 
     void Parser::close_object () {
         data::stack<entry<Expression, Expression>> m;
+
         while (data::size (expr) > 0) {
             m <<= entry<Expression, Expression> {expr[1], expr[0]};
             expr = rest (rest (expr));
         }
+
         expr = data::prepend (first (back_expr), make::map (m));
         back_expr = rest (back_expr);
     }
