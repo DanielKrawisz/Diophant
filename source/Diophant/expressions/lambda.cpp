@@ -12,7 +12,7 @@ namespace Diophant::expressions {
             auto aa = arguments;
             auto zz = z.arguments;
             while (!data::empty (aa)) {
-                r = r.insert (*data::first (aa), expression (std::static_pointer_cast<const expressions::abstract> (data::first (zz))));
+                r = r.insert (data::first (aa), make::symbol (data::first (zz).name));
                 aa = data::rest (aa);
                 zz = data::rest (zz);
             }

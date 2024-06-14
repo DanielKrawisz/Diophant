@@ -9,10 +9,10 @@ namespace Diophant::expressions {
     struct call final : abstract {
 
         uint32 precedence () const override;
-        Expression function;
+        expression function;
         data::list<Expression> arguments;
 
-        call (Expression &f, data::list<Expression> &a) : function {f}, arguments {a} {}
+        call (Expression &f, data::list<Expression> a) : function {f}, arguments {a} {}
 
         std::ostream &write (std::ostream &o) const override;
 

@@ -57,9 +57,9 @@ namespace parse {
     struct normal_symbol : seq<alpha, star<symbol_char>> {};
     
     // you can also have a symbol that's `any string inside these`. 
-    struct abnormal_symbol : seq<one<'`'>, star<seq<not_at<one<'`'>>, sor<seq<string<'\\', '`'>>, ascii::print>>>, one<'`'>> {};
+    struct abnormal_symbol : star<seq<not_at<one<'`'>>, sor<seq<string<'\\', '`'>>, ascii::print>>> {};
 
-    struct symbol : minus<sor<normal_symbol, abnormal_symbol>, 
+    struct symbol : minus<sor<normal_symbol, seq<one<'`'>, abnormal_symbol, one<'`'>>>,
         sor<string<'i', 'f'>, string<'i', 'n'>, string<'l', 'e', 't'>, string<'t', 'h', 'e', 'n'>, string<'e', 'l', 's', 'e'>>> {};
 
     struct var : seq<one<'_'>, opt<symbol>> {};
@@ -460,7 +460,7 @@ namespace Diophant {
             // NOTE for some reason, "in" gets on the stack, which is why we are taking the 
             // third and second elements from the stack instead of the first and second. 
             // This is a kludge and should be repaired eventually. 
-            eval.statements <<= statement {eval.machine.make_subject (eval.expr[2]), eval.expr[1]};
+            eval.statements <<= statement {subject (eval.expr[2]), eval.expr[1]};
             eval.expr = data::drop (eval.expr, 3);
         }
     };
@@ -476,7 +476,7 @@ namespace Diophant {
     template <> struct eval_action<parse::set> {
         template <typename Input>
         static void apply (const Input &in, Parser &eval) {
-            eval.statements <<= statement {eval.machine.make_subject (eval.expr[1]), eval.expr[0]};
+            eval.statements <<= statement {subject (eval.expr[1]), eval.expr[0]};
             eval.expr = data::rest (data::rest (eval.expr));
         }
     };
@@ -549,8 +549,8 @@ namespace Diophant {
     }
     
     void inline Parser::read_symbol (const data::string &in) {
-        if (reading_lambda_vars) vars <<= expressions::symbol::make (in, machine.registered);
-        else expr <<= make::symbol (in, machine.registered);
+        if (reading_lambda_vars) vars <<= expressions::symbol {in};
+        else expr <<= make::symbol (in);
     }
     
     void inline Parser::any () {
@@ -558,7 +558,7 @@ namespace Diophant {
     }
     
     void inline Parser::var () {
-        expr = prepend (rest (expr), make::var (std::dynamic_pointer_cast<const expressions::symbol> (first (expr))));
+        expr = prepend (rest (expr), make::var (dynamic_cast<const expressions::symbol &> (*first (expr).get ())));
     }
 
     void inline Parser::read_string (const data::string &in) {

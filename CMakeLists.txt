@@ -35,6 +35,7 @@ add_library (Diophant STATIC
     source/Diophant/value.cpp
     source/Diophant/type.cpp
     source/Diophant/symbol.cpp
+    source/Diophant/statement.cpp
     source/Diophant/expressions/values.cpp
     source/Diophant/expressions/symbol.cpp
     source/Diophant/expressions/lambda.cpp

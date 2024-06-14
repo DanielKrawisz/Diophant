@@ -7,17 +7,14 @@
 namespace Diophant::expressions {
     
     struct symbol final: abstract {
-        const std::string name;
-        
-        static Symbol make (const std::string &x, symbols &z) {
-            return z[x];
-        }
+        std::string name;
+
+        symbol () : name {} {};
+        symbol (const std::string &x) : name {x} {}
         
         std::ostream &write (std::ostream &) const override;
 
         bool operator == (const abstract &) const override;
-        
-        symbol (const std::string &x) : name {x} {}
         
         static bool normal (const std::string &name);
     };
@@ -45,20 +42,6 @@ namespace Diophant::expressions {
 
     std::ostream inline &operator << (std::ostream &o, symbol x) {
         return o << x.name;
-    }
-}
-
-namespace Diophant {
-    std::ostream inline &operator << (std::ostream &o, Symbol x) {
-        return o << *x;
-    }
-    
-    std::strong_ordering inline operator <=> (Symbol a, Symbol b) {
-        return *a <=> *b;
-    }
-    
-    bool inline operator == (Symbol a, Symbol b) {
-        return a.get () == b.get () ? true : a.get () == nullptr || b.get () == nullptr ? false : *a == *b;
     }
 }
 

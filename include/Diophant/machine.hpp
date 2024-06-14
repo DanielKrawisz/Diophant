@@ -13,13 +13,10 @@ namespace Diophant {
     std::ostream &operator << (std::ostream &, const subject &);
 
     struct Machine {
-        Expression evaluate (Expression &, data::set<expressions::symbol> fixed);
+        Expression evaluate (Expression &, data::set<symbol> fixed);
 
         void declare (const subject &);
         void define (const subject &, Expression &);
-        
-        void declare (const string &);
-        void define (const string &, Expression &);
 
         maybe<replacements> match (parameters &, Expression &) const;
         
@@ -45,11 +42,7 @@ namespace Diophant {
                 key {k}, value {v}, locked {false}, more_specific {} {}
         };
 
-        std::map<expressions::symbol, overloads> definitions;
-
-        symbols registered {};
-        
-        subject make_subject (Expression &);
+        std::map<symbol, overloads> definitions;
     };
     
     void initialize (Machine&);
@@ -60,14 +53,6 @@ namespace Diophant {
         for (const auto &e : p.params) e.write (o << " ", call_precedence);
         if (p.such_that.get () != nullptr) o << " ? " << p.such_that;
         return o;
-    }
-    
-    void inline Machine::declare (const string &z) {
-        declare (make_subject (expression {z}));
-    }
-    
-    void inline Machine::define (const string &z, Expression &x) {
-        define (make_subject (expression {z}), x);
     }
 
 }

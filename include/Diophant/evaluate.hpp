@@ -7,7 +7,7 @@ namespace Diophant {
 
     struct Machine;
 
-    Expression evaluate (Expression &, Machine &, data::set<expressions::symbol> fixed = {});
+    Expression evaluate (Expression &, Machine &, data::set<symbol> fixed = {});
     
 }
 

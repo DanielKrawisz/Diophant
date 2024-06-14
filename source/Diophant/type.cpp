@@ -10,13 +10,41 @@
 #include <Diophant/expressions/pattern.hpp>
 
 namespace Diophant {
+
+    Type type::Null () {
+        return make::symbol ("Null");
+    }
+
+    Type type::Bool () {
+        return make::symbol ("Bool");
+    }
+
+    Type type::N () {
+        return make::symbol ("N");
+    }
+
+    Type type::Z () {
+        return make::symbol ("Z");
+    }
+
+    Type type::Q () {
+        return make::symbol ("Q");
+    }
+
+    Type type::String () {
+        return make::symbol ("String");
+    }
+
+    Type type::Float () {
+        return make::symbol ("Float");
+    }
     
     Type type::Z (const data::N &n) {
-        return make::call ((*symbols ())["Z"], {make::natural (n)});
+        return make::call (make::symbol ("Z"), {make::natural (n)});
     }
     
     Type type::List (Type &t) {
-        return make::call ((*symbols ())["List"], {t});
+        return make::call (make::symbol ("List"), {t});
     }
     
     Type type::Tuple (data::stack<Type> x) {
@@ -24,7 +52,7 @@ namespace Diophant {
     }
     
     Type type::Array (Type &t, uint32 size) {
-        return make::call (make::call ((*symbols ())["Array"], t), {make::natural (size)});
+        return make::call (make::call (make::symbol ("Array"), t), {make::natural (size)});
     }
     
     intuit cast (Type t, Expression expr, const Machine &m) {

@@ -30,10 +30,12 @@ namespace Diophant {
     std::ostream &operator << (std::ostream &, const parameters &);
 
     struct subject {
-        Symbol root;
+        symbol root;
         Diophant::parameters parameters;
 
         subject (Symbol &r, const Diophant::parameters &p = {}): root {r}, parameters {p} {}
+        subject (Expression &);
+        subject (const std::string &x): subject {expression {x}} {}
     };
     
     std::ostream &operator << (std::ostream &, const subject &x);

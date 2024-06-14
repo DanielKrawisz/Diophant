@@ -14,7 +14,7 @@ namespace Diophant::make {
     Expression natural (const data::N &q);
     Expression integer (const data::Z &q);
     Expression rational (const data::Q &q);
-    Expression symbol (const std::string &x, symbols &);
+    Expression symbol (const std::string &x);
     Expression string (const data::string &str);
     Expression list (data::stack<Expression> ls);
     Expression map (data::stack<data::entry<Expression, Expression>> x);

@@ -96,7 +96,7 @@ namespace Diophant {
             r = combine (r, match (p.params[i], e));
             if (!r) return {};
         }
-        
+
         return {r};
     }
 
@@ -106,10 +106,10 @@ namespace Diophant {
 
     void def (const subject &z, maybe<expression> x, Machine &m) {
         //
-        auto v = m.definitions.find (*z.root);
+        auto v = m.definitions.find (z.root);
         if (v == m.definitions.end ()) {
             Machine::overloads o {{Machine::definition {z.parameters, x}}};
-            m.definitions[*z.root] = o;
+            m.definitions[z.root] = o;
             return;
         }
 
@@ -127,7 +127,7 @@ namespace Diophant {
     }
 
     Machine::Machine () {
-        
+        /*
         make::symbol ("Impossible", registered);
         make::symbol ("Void", registered);
         make::symbol ("Bool", registered);
@@ -159,6 +159,7 @@ namespace Diophant {
         make::symbol ("++l", registered);
         make::symbol ("--l", registered);
         make::symbol ("^", registered);
+        make::symbol ("+", registered);
         make::symbol ("*", registered);
         make::symbol ("%", registered);
         make::symbol ("/", registered);
@@ -176,11 +177,10 @@ namespace Diophant {
         make::symbol ("<==>", registered);
         make::symbol (":", registered);
         make::symbol ("&", registered);
-        make::symbol ("|", registered);
+        make::symbol ("|", registered);*/
     }
 
     void initialize (Machine &m) {
-        type::symbols () = &m.registered;
         
         m.define (string {"true"}, make::boolean (true));
         m.define (string {"false"}, make::boolean (false));
@@ -206,11 +206,9 @@ namespace Diophant {
         m.define (string {"`&&`"}, string {"Bool => Bool => Bool # and"});
         m.define (string {"`||`"}, string {"Bool => Bool => Bool # or"});*/
         
-        m.registered.update ();
-        
     }
 
-    Expression eval (Expression &x, Machine &m, data::set<expressions::symbol> fixed) {
+    Expression eval (Expression &x, Machine &m, data::set<symbol> fixed) {
         // evaluate again and again until the result doesn't change
         expression last = x;
         int i = 0;
@@ -276,114 +274,71 @@ namespace Diophant {
         return nullptr;
     }
 
-    subject Machine::make_subject (Expression &x) {
-        if (x.get () == nullptr) goto fail;
+    maybe<expressions::call> match_and_call (const Machine::overloads &o, list<Expression> x);
 
-        if (auto px = std::dynamic_pointer_cast<const expressions::symbol> (x); px != nullptr)
-            return subject (px);
-
-        if (auto pa = std::dynamic_pointer_cast<const expressions::call> (x); pa != nullptr) {
-            expression fun = pa->function;
-            list<Expression> arguments = pa->arguments;
-
-            while (true) {
-                if (const auto fx = std::dynamic_pointer_cast<const expressions::symbol> (fun); bool (fx))
-                    return subject {fx, parameters {arguments}};
-
-                if (const auto fa = std::dynamic_pointer_cast<const expressions::call> (fun); bool (fa)) {
-                    fun = fa->function;
-                    arguments = fa->arguments + arguments;
-                    continue;
-                }
-
-                goto fail;
-            }
-        }
-
-        if (auto pst = std::dynamic_pointer_cast<const expressions::such_that> (x); pst != nullptr) {
-            auto x = make_subject (pst->pattern);
-            x.parameters.such_that = pst->type;
-            return x;
-        }
-
-        if (auto pb = std::dynamic_pointer_cast<const expressions::binary_expression> (x); pb != nullptr) {
-            auto v = registered.find (binary_operator (pb->op));
-            if (! bool (v)) throw exception {} << " unknown binary operator " << binary_operator (pb->op);
-            subject x (v);
-            x.parameters.params.resize (2);
-            x.parameters.params[0] = pb->left;
-            x.parameters.params[1] = pb->right;
-            return x;
-        }
-
-        if (auto pu = std::dynamic_pointer_cast<const expressions::left_unary_expression> (x); pu != nullptr)
-            throw exception {} << "not yet implemented: define " << x;
-
-        fail:
-        throw exception {} << "cannot define " << x;
-    }
-
-    maybe<Expression> match_and_call (const Machine::overloads &o, list<Expression> x);
-
-    Expression Machine::evaluate (Expression &x, data::set<expressions::symbol> fixed) {
+    Expression Machine::evaluate (Expression &x, data::set<symbol> fixed) {
         auto p = x.get ();
         if (p == nullptr) return x;
 
-        if (auto px = dynamic_cast<const expressions::symbol *> (p); px != nullptr) {
-            if (fixed.contains (*px)) return x;
-            auto v = this->definitions.find (*px);
+        if (auto q = std::dynamic_pointer_cast<const expressions::symbol> (x); q != nullptr) {
+            if (fixed.contains (*q)) return x;
+            auto v = this->definitions.find (*q);
             if (v == this->definitions.end ()) return x;
             auto w = match_and_call (v->second, {});
-            return bool (w) ? *w : x;
+            return bool (w) ? w->function : x;
         }
 
         if (auto pa = dynamic_cast<const expressions::call *> (p); pa != nullptr) {
-            expression fun = pa->function;
 
             auto eval_arg = [this, &fixed] (Expression &x) -> Expression {
                 return eval (x, *this, fixed);
             };
 
-            list<Expression> args = data::for_each (eval_arg, pa->arguments);
+            expressions::call call {pa->function, data::for_each (eval_arg, pa->arguments)};
 
             while (true) {
 
                 // check for apply
-                if (auto ca = std::dynamic_pointer_cast<const expressions::call> (fun); ca != nullptr) {
-                    fun = ca->function;
-                    args = data::for_each (eval_arg, ca->arguments) + args;
+                if (auto ca = std::dynamic_pointer_cast<const expressions::call> (call.function); ca != nullptr) {
+                    call = expressions::call {ca->function, data::for_each (eval_arg, ca->arguments) + call.arguments};
 
                 // check for lambda
-                } else if (auto la = std::dynamic_pointer_cast<const expressions::lambda> (fun); la != nullptr) {
-                    fun = (*la) (data::first (args));
-                    args = data::rest (args);
-                    if (data::size (args) == 0) return eval (fun, *this, fixed);
+                } else if (auto la = std::dynamic_pointer_cast<const expressions::lambda> (call.function); la != nullptr) {
+                    call = expressions::call {(*la) (data::first (call.arguments)), data::rest (call.arguments)};
+                    if (data::size (call.arguments) == 0) return eval (call.function, *this, fixed);
 
                 // check for function
-                } else if (auto fa = std::dynamic_pointer_cast<const expressions::function> (fun); fa != nullptr) {
+                } else if (auto fa = std::dynamic_pointer_cast<const expressions::function> (call.function); fa != nullptr) {
                     uint32 na = fa->number_of_args ();
-                    if (data::size (args) >= na) {
-                        fun = fa->operator () (data::take (args, na));
-                        args = data::drop (args, na);
-                    } else break;
+                    if (data::size (call.arguments) >= na)
+                        call = expressions::call {
+                            fa->operator () (data::take (call.arguments, na)),
+                            data::drop (call.arguments, na)};
+                    if (data::size (call.arguments) == 0) return call.function;
+                    else break;
 
                 // check for symbol
-                } else if (symbol q = std::dynamic_pointer_cast<const expressions::symbol> (fun); q != nullptr) {
+                } else if (auto q = std::dynamic_pointer_cast<const expressions::symbol> (call.function); q != nullptr) {
                     if (fixed.contains (*q)) break;
                     auto v = this->definitions.find (*q);
                     if (v == this->definitions.end ()) break;
-                    auto w = match_and_call (v->second, args);
+                    auto w = match_and_call (v->second, call.arguments);
                     if (!bool (w)) break;
-                    return *w;
+                    call = *w;
+                    continue;
                 }
 
-                auto result = eval (fun, *this, fixed);
-                if (result == fun) break;
+                auto result = eval (call.function, *this, fixed);
+                if (result == call.function) break;
             }
 
             end_call:
-            return fun == pa->function && args == pa->arguments ? x : make::call (fun, args);
+            return call.function == pa->function && call.arguments == pa->arguments ? x : make::call (call.function, call.arguments);
         }
+        /*
+        if (auto pb = dynamic_cast<const expressions::binary_expression *> (p); pb != nullptr) {
+            std::cout << " found binary expression" << std::endl;
+        }*/
 
         if (auto pz = dynamic_cast<const expressions::list *> (p); pz != nullptr) {
             stack<Expression> evaluated;
@@ -428,15 +383,15 @@ namespace Diophant {
         Expression &predicate;
     };
 
-    maybe<Expression> match_and_call (const Machine::overloads &o, list<Expression> x) {
+    maybe<expressions::call> match_and_call (const Machine::overloads &o, list<Expression> x) {
         for (const auto &e : o) {
-            if (e.key.params.size () > x.size ()) return {};
-            if (e.key.params.size () < x.size ()) continue;
+            auto num_args = e.key.params.size ();
+            if (num_args > x.size ()) return {};
             
-            auto r = Diophant::match (e.key, x);
+            auto r = Diophant::match (e.key, take (x, num_args));
             if (!r) continue;
 
-            if (bool (e.value)) return replace (*e.value, *r);
+            if (bool (e.value)) return expressions::call {replace (*e.value, *r), drop (x, num_args)};
         }
 
         return {};

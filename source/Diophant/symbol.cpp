@@ -1,9 +1,13 @@
 #include <Diophant/expressions/symbol.hpp>
 
-namespace Diophant {
+namespace Diophant {/*
     Symbol symbols::operator [] (const std::string &x) {
+        std::cout << "    retrieving symbol " << x << std::endl;
         auto v = registered.find (x);
-        if (v != registered.end ()) return v->second;
+        if (v != registered.end ()) {
+        std::cout << "    symbol found. " << std::endl;
+            return v->second;
+        }
         
         registered[x] = nullptr;
             
@@ -26,5 +30,5 @@ namespace Diophant {
     void symbols::revert () {
         for (const auto &x : new_symbols) registered.erase (registered.find (x->name)); 
         new_symbols = {};
-    }
+    }*/
 }

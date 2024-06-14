@@ -8,7 +8,9 @@ namespace Diophant {
         
         if (x == nullptr) return true;
         if (auto b = dynamic_cast<const expressions::boolean *> (x); b != nullptr) return true;
+
         if (auto b = dynamic_cast<const expressions::natural *> (x); b != nullptr) return true;
+
         if (auto b = dynamic_cast<const expressions::integer *> (x); b != nullptr) return true;
         if (auto b = dynamic_cast<const expressions::rational *> (x); b != nullptr) return true;
         if (auto b = dynamic_cast<const expressions::string *> (x); b != nullptr) return true;
@@ -24,13 +26,13 @@ namespace Diophant {
         }
         
         if (auto b = dynamic_cast<const expressions::lambda *> (x); b != nullptr) {
-            for (auto x : b->arguments) free = free.insert (*x);
+            for (auto x : b->arguments) free = free.insert (x);
             return valid_value (b->body, free);
         }
         
         if (auto b = dynamic_cast<const expressions::symbol *> (x); b != nullptr)
             return free.contains (*b);
-        
+
         return false;
         
     }

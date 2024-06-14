@@ -8,14 +8,9 @@ namespace Diophant::expressions {
 }
 
 namespace Diophant {
-    using symbol = ptr<const expressions::symbol>;
+    using symbol = expressions::symbol;
     using Symbol = const symbol;
-    struct symbols;
-
-    std::ostream &operator << (std::ostream &, Symbol);
-    std::strong_ordering operator <=> (Symbol a, Symbol b);
-    bool operator == (Symbol a, Symbol b);
-    
+    /*
     struct symbols {
         // register a new symbol.
         Symbol operator [] (const std::string &);
@@ -34,7 +29,7 @@ namespace Diophant {
     //private:
         std::map<std::string, symbol> registered;
         list<symbol> new_symbols;
-    };
+    };*/
 }
 
 #endif

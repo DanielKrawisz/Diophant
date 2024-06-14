@@ -25,13 +25,13 @@ namespace Diophant::expressions {
     std::istream &operator >> (std::istream &i, lambda &l);
     
     Expression inline lambda::operator () (Expression x) const {
-        if (data::size (arguments) == 1) return replace (body, {{{*data::first (arguments), x}}});
-        return make::lambda (data::rest (arguments), replace (body, {{{*data::first (arguments), x}}}));
+        if (data::size (arguments) == 1) return replace (body, {{{data::first (arguments), x}}});
+        return make::lambda (data::rest (arguments), replace (body, {{{data::first (arguments), x}}}));
     }
 
     std::ostream inline &lambda::write (std::ostream &o) const {
         o << "@ ";
-        for (auto x : arguments) o << *x << " ";
+        for (auto x : arguments) o << x << " ";
         return o << "-> " << body;
     }
     

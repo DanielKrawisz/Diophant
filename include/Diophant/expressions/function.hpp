@@ -88,7 +88,7 @@ namespace Diophant::expressions {
     template <typename T>
     struct from {
         Expression operator () (const T &x) const {
-            return Diophant::expression {std::static_pointer_cast<const abstract> (std::make_shared<value<T>> (x))};
+            return value<T>::make (x);
         }
     };
 

@@ -13,9 +13,9 @@ namespace Diophant {
     
     void values_test_case (const string &expected, const string &program) {
         value result;
-        EXPECT_NO_THROW (result = run (program));
         value expected_result {expected};
         EXPECT_TRUE (expected_result.valid ());
+        EXPECT_NO_THROW (result = run (program));
         EXPECT_EQ (expected_result, result) << "expected program " << program << " to evaluate to " << expected << " but got " << result;
     }
     
@@ -27,13 +27,13 @@ namespace Diophant {
         values_test_case ("3", "n := 3; n");
         values_test_case ("17", "if true then 17 else 35");
         values_test_case ("35", "if false then 17 else 35");
+        values_test_case ("2", "1 + 1");
         //values_test_case ("[true, false]", "eq _x _x ? x:Value := true; _x == _y ? x:Value & y:Value := false; [eq 5 5, eq 7 3]");
         /*
         values_test_case ("[false, true]", "not true := false; not false := true; ! := not [!true, !false]");
         values_test_case ("true", "!false");
         values_test_case ("false", "and false true");
         values_test_case ("true", "or false true");
-        values_test_case ("2", "1 + 1");
         values_test_case ("3 / 5", "6 / 10");
         values_test_case ("44", "9 + 7 * 5");
         values_test_case ("80", "(9 + 7) * 5");

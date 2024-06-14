@@ -5,8 +5,7 @@ namespace Diophant::expressions {
     
     bool var::operator == (const abstract &a) const {
         try {
-            auto x = dynamic_cast<const var &> (a);
-            return x.name == name ? true : x.name == nullptr || name == nullptr ? false : *x.name == *name;
+            return name == dynamic_cast<const var &> (a).name;
         } catch (std::bad_cast) {
             return false;
         }

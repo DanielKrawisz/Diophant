@@ -20,7 +20,7 @@ namespace Diophant {
         
         if (auto pc = std::dynamic_pointer_cast<const expressions::call> (x); pc != nullptr) {
             auto fun = zplace (pc->function, r);
-            auto args = data::for_each ([&r] (Expression &z) -> Expression { zplace (z, r); }, pc->arguments);
+            auto args = data::for_each ([&r] (Expression &z) -> Expression { return zplace (z, r); }, pc->arguments);
             if (fun == pc->function && args == pc->arguments) return x;
             return make::call (fun, args);
         }
