@@ -27,8 +27,10 @@ namespace Diophant {
         values_test_case ("3", "n := 3; n");
         values_test_case ("17", "if true then 17 else 35");
         values_test_case ("35", "if false then 17 else 35");
-        values_test_case ("2", "1 + 1");
-        //values_test_case ("[true, false]", "eq _x _x ? x:Value := true; _x == _y ? x:Value & y:Value := false; [eq 5 5, eq 7 3]");
+        values_test_case ("2", "1 + 1");/*
+        values_test_case ("24", "f := @ x -> if x < 2 then 1 else f (x - 1); f 4");
+        values_test_case ("24", "(@ x -> if x < 2 then 1 else this (x - 1)) 4");
+        values_test_case ("[true, false]", "eq _x _x ? x:Value := true; _x == _y ? x:Value & y:Value := false; [eq 5 5, eq 7 3]");*/
         /*
         values_test_case ("[false, true]", "not true := false; not false := true; ! := not [!true, !false]");
         values_test_case ("true", "!false");

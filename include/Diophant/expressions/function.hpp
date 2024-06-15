@@ -47,6 +47,12 @@ namespace Diophant::expressions {
         }
     };
 
+    template <> struct signature<data::Z> {
+        Type operator * () const {
+            return type::Z ();
+        }
+    };
+
     template <> struct signature<double> {
         Type operator * () const {
             return type::Float ();

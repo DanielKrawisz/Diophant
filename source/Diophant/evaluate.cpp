@@ -2,6 +2,7 @@
 #include <Diophant/machine.hpp>
 #include <Diophant/symbol.hpp>
 #include <Diophant/expressions/binary.hpp>
+#include <Diophant/expressions/unary.hpp>
 #include <Diophant/expressions/values.hpp>
 #include <Diophant/expressions/if.hpp>
 #include <Diophant/expressions/let.hpp>
@@ -32,10 +33,9 @@ namespace Diophant {
         }
 
         auto p = x.get ();
-        /*
-        if (auto pu = dynamic_cast<const expressions::left_unary_expression *> (p); pu != nullptr) {
-            return make::call (, {apply_to_call (pu->expression, m, fixed)});
-        }*/
+
+        if (auto pu = dynamic_cast<const expressions::left_unary_expression *> (p); pu != nullptr)
+            return make::call (make::symbol (left_unary_operator (pu->op)), {flatten_calls (pu->expression, m, fixed)});
 
         if (auto pz = dynamic_cast<const expressions::list *> (p); pz != nullptr) {
             stack<Expression> evaluated;

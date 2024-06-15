@@ -49,6 +49,7 @@ namespace Diophant {
         test_case ("let x -> 3 in x + x");
         test_case ("let x -> 3, y -> 7 in x ^ y");
         test_case ("if 2 < 0 then 222 else 6666");
+        test_case ("f := @ x -> if x < 2 then 1 else f (x - 1); f 13");
     }
 
 }

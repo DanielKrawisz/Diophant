@@ -184,8 +184,28 @@ namespace Diophant {
         
         m.define (string {"true"}, make::boolean (true));
         m.define (string {"false"}, make::boolean (false));
+
         m.define (string {"`+`"}, make::built_in_function<data::N, const data::N &, const data::N &> (&plus_N));
         m.define (string {"`*`"}, make::built_in_function<data::N, const data::N &, const data::N &> (&times_N));
+        m.define (string {"`-`"}, make::built_in_function<data::N, const data::N &, const data::N &> (&times_N));
+/*
+        m.define (string {"`+`"}, make::built_in_function<data::Z, const data::Z &, const data::Z &> (&plus_Z));
+        m.define (string {"`*`"}, make::built_in_function<data::Z, const data::Z &, const data::Z &> (&times_Z));
+        m.define (string {"`-`"}, make::built_in_function<data::Z, const data::Z &, const data::Z &> (&minus_Z));
+*/
+        m.define (string {"`==`"}, make::built_in_function<bool, const data::N &, const data::N &> (&eq_N));
+        m.define (string {"`!=`"}, make::built_in_function<bool, const data::N &, const data::N &> (&neq_N));
+        m.define (string {"`<=`"}, make::built_in_function<bool, const data::N &, const data::N &> (&geq_N));
+        m.define (string {"`>=`"}, make::built_in_function<bool, const data::N &, const data::N &> (&leq_N));
+        m.define (string {"`<`"}, make::built_in_function<bool, const data::N &, const data::N &> (&less_N));
+        m.define (string {"`>`"}, make::built_in_function<bool, const data::N &, const data::N &> (&greater_N));
+/*
+        m.define (string {"`==`"}, make::built_in_function<bool, const data::Z &, const data::Z &> (&eq_Z));
+        m.define (string {"`!=`"}, make::built_in_function<bool, const data::Z &, const data::Z &> (&neq_Z));
+        m.define (string {"`<=`"}, make::built_in_function<bool, const data::Z &, const data::Z &> (&geq_Z));
+        m.define (string {"`>=`"}, make::built_in_function<bool, const data::Z &, const data::Z &> (&leq_Z));
+        m.define (string {"`<`"}, make::built_in_function<bool, const data::Z &, const data::Z &> (&less_Z));
+        m.define (string {"`>`"}, make::built_in_function<bool, const data::Z &, const data::Z &> (&greater_Z));*/
         /*
         m.define (string {"_x == _x ? x:Value"}, string {"true"});
         m.define (string {"_x == _y ? x:Value & y:Value"}, string {"false"});

@@ -129,6 +129,66 @@ namespace Diophant {
         return a * b;
     }
 
+    data::Z inline plus_Z (const data::Z &a, const data::Z &b) {
+        return a + b;
+    }
+
+    data::Z inline minus_Z (const data::Z &a, const data::Z &b) {
+        return a - b;
+    }
+
+    data::Z inline times_Z (const data::Z &a, const data::Z &b) {
+        return a * b;
+    }
+
+    bool inline eq_N (const data::N &a, const data::N &b) {
+        return a == b;
+    }
+
+    bool inline neq_N (const data::N &a, const data::N &b) {
+        return a != b;
+    }
+
+    bool inline leq_N (const data::N &a, const data::N &b) {
+        return a <= b;
+    }
+
+    bool inline geq_N (const data::N &a, const data::N &b) {
+        return a >= b;
+    }
+
+    bool inline less_N (const data::N &a, const data::N &b) {
+        return a < b;
+    }
+
+    bool inline greater_N (const data::N &a, const data::N &b) {
+        return a > b;
+    }
+
+    bool inline eq_Z (const data::Z &a, const data::Z &b) {
+        return a == b;
+    }
+
+    bool inline neq_Z (const data::Z &a, const data::Z &b) {
+        return a != b;
+    }
+
+    bool inline leq_Z (const data::Z &a, const data::Z &b) {
+        return a <= b;
+    }
+
+    bool inline geq_Z (const data::Z &a, const data::Z &b) {
+        return a >= b;
+    }
+
+    bool inline less_Z (const data::Z &a, const data::Z &b) {
+        return a < b;
+    }
+
+    bool inline greater_Z (const data::Z &a, const data::Z &b) {
+        return a > b;
+    }
+
 }
 
 #endif
