@@ -10,8 +10,10 @@
 namespace Diophant {
 
     Expression flatten_calls (Expression &x) {
+        // if null, nothing to do.
         if (x.get () == nullptr) return x;
 
+        // if this is a function call, look at the sub expressions to see if there are more calls.
         if (auto pc = std::dynamic_pointer_cast<const expressions::call> (x); pc != nullptr) {
             // first evaluate function and argument.
             expression fun = pc->function;
@@ -27,6 +29,7 @@ namespace Diophant {
             }
         }
 
+        // otherwise we look at the sub expressions and apply flatten_calls to them.
         if (auto pb = std::dynamic_pointer_cast<const expressions::binary_expression> (x); pb != nullptr) {
             return make::call (make::symbol (binary_operator (pb->op)),
                 {flatten_calls (pb->left), flatten_calls (pb->right)});
@@ -35,7 +38,7 @@ namespace Diophant {
         auto p = x.get ();
 
         if (auto pu = dynamic_cast<const expressions::left_unary_expression *> (p); pu != nullptr)
-            return make::call (make::symbol (left_unary_operator (pu->op)), {flatten_calls (pu->expression, m, fixed)});
+            return make::call (make::symbol (left_unary_operator (pu->op)), {flatten_calls (pu->expression/*, m, fixed*/)});
 
         if (auto pz = dynamic_cast<const expressions::list *> (p); pz != nullptr) {
             stack<Expression> evaluated;

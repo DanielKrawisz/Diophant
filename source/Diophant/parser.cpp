@@ -14,7 +14,10 @@
 namespace parse {
     using namespace tao::pegtl;
     
-    struct comment : seq<string<'/','<'>, star<seq<not_at<string<'>','/'>>, ascii::print>>, string<'>','/'>> {};
+    // comments are c++ style
+    struct comment : sor<
+        seq<string<'/','*'>, star<seq<not_at<string<'*','/'>>, ascii::print>>, string<'*','/'>>,
+        seq<string<'/','/'>, star<seq<not_at<one<'\n'>>, ascii::print>>, one<'\n'>>> {};
     struct white : sor<one<' '>, one<'\t'>, one<'\n'>, comment> {};
     struct ws : star<white> {};
     
@@ -31,7 +34,7 @@ namespace parse {
     struct set : seq<string<':', '='>, ws, expression> {};
     struct statement : seq<pattern, ws, set> {};
 
-    // literals can be natural numbers or strings,
+    // literals can be natural numbers or strings.
 
     // natural numbers are written in hex or decimal.
     struct hex_digit : seq<xdigit, xdigit> {};
@@ -49,7 +52,7 @@ namespace parse {
     // strings are written with ""
     struct string_lit : seq<
         one<'"'>,                                             // opening "
-            string_body,
+        string_body,
         one<'"'>> {};                                         // closing "
     
     // symbols are alpha characters followed by _ and alphanumeric.
@@ -77,11 +80,10 @@ namespace parse {
     struct lambda_arrow : string<'-','>'> {};
     struct lambda : seq<lambda_start, ws, plus<seq<symbol, ws>>, lambda_arrow, ws, expression> {};
 
-    // parentheses are only used to group expressions
     struct open_paren : one<'('> {};
     struct close_paren : one<')'> {};
 
-    struct parenthetical : seq<open_paren, ws, expression, ws, close_paren> {};
+    struct parenthetical : seq<open_paren, ws, expression, ws, star<seq<one<','>, ws, expression, ws>>, close_paren> {};
     
     struct open_list : one<'['> {};
     struct close_list : one<']'> {};
@@ -662,7 +664,11 @@ namespace Diophant {
     }
 
     void inline Parser::call () {
-        expr = prepend (rest (rest (expr)), make::call (first (rest (expr)), first (expr)));
+        expr = prepend (
+            rest (rest (expr)),
+            make::call (
+                first (rest (expr)),
+                take (expr, 1)));
     }
 
     void inline Parser::start_vars () {

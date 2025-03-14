@@ -84,6 +84,10 @@ namespace Diophant::expressions {
         return o << x;
     }
 
+    std::ostream inline &write (std::ostream &o, const data::Z &x) {
+        return o << x;
+    }
+
     template <typename X>
     std::ostream inline &write_iterable (std::ostream &o, const X &x) {
         auto i = x.begin ();

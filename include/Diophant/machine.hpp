@@ -45,7 +45,7 @@ namespace Diophant {
         std::map<symbol, overloads> definitions;
     };
     
-    void initialize (Machine&);
+    void initialize (Machine &);
 
     std::ostream &operator << (std::ostream &, const Machine &);
 

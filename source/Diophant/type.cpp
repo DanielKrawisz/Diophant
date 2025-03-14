@@ -52,7 +52,7 @@ namespace Diophant {
     }
     
     Type type::Array (Type &t, uint32 size) {
-        return make::call (make::call (make::symbol ("Array"), t), {make::natural (size)});
+        return make::call (make::call (make::symbol ("Array"), list<Expression> {t}), {make::natural (size)});
     }
     
     intuit cast (Type t, Expression expr, const Machine &m) {
